@@ -42,85 +42,132 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
 }
 
+/* NomadDarts Design System - Dark Theme Only */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.51 0.23 277);
-  --primary-foreground: oklch(0.96 0.02 272);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.79 0.1 275);
-  --chart-2: oklch(0.68 0.16 277);
-  --chart-3: oklch(0.59 0.2 277);
-  --chart-4: oklch(0.51 0.23 277);
-  --chart-5: oklch(0.46 0.21 277);
-  --radius: 0.45rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.51 0.23 277);
-  --sidebar-primary-foreground: oklch(0.96 0.02 272);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
-}
+  /* Base Colors - Charcoal Background + Electric Cyan Accent */
+  --background: oklch(0.141 0.005 285.823); /* #0D0D0D - Charcoal */
+  --foreground: oklch(0.985 0 0); /* White text */
 
-.dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
+  /* Card/Surface Colors */
+  --card: oklch(0.21 0.006 285.885); /* #151515 - Slightly lighter */
   --card-foreground: oklch(0.985 0 0);
+
+  /* Popover */
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.59 0.2 277);
-  --primary-foreground: oklch(0.96 0.02 272);
-  --secondary: oklch(0.274 0.006 286.033);
+
+  /* Primary - Electric Cyan */
+  --primary: oklch(0.91 0.25 195); /* #00FFFF - Electric Cyan */
+  --primary-foreground: oklch(0.141 0.005 285.823); /* Black text on cyan */
+
+  /* Secondary - Dark Gray */
+  --secondary: oklch(0.274 0.006 286.033); /* #262626 */
   --secondary-foreground: oklch(0.985 0 0);
+
+  /* Muted - Subtle Gray */
   --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.79 0.1 275);
-  --chart-2: oklch(0.68 0.16 277);
-  --chart-3: oklch(0.59 0.2 277);
-  --chart-4: oklch(0.51 0.23 277);
-  --chart-5: oklch(0.46 0.21 277);
+  --muted-foreground: oklch(0.705 0.015 286.067); /* Gray 400 */
+
+  /* Accent - Cyan variant */
+  --accent: oklch(0.91 0.25 195);
+  --accent-foreground: oklch(0.141 0.005 285.823);
+
+  /* Destructive - Red */
+  --destructive: oklch(0.577 0.245 27.325); /* Red 500 */
+  --destructive-foreground: oklch(0.985 0 0);
+
+  /* Borders & Inputs */
+  --border: oklch(0.274 0.006 286.033); /* #262626 - Gray 800 */
+  --input: oklch(0.274 0.006 286.033);
+  --ring: oklch(0.91 0.25 195); /* Cyan focus ring */
+
+  /* Charts - Cyan gradient */
+  --chart-1: oklch(0.79 0.1 195); /* Cyan 400 */
+  --chart-2: oklch(0.68 0.16 195); /* Cyan 500 */
+  --chart-3: oklch(0.59 0.2 195); /* Cyan 600 */
+  --chart-4: oklch(0.51 0.23 195); /* Cyan 700 */
+  --chart-5: oklch(0.46 0.21 195); /* Cyan 800 */
+
+  /* Border Radius */
+  --radius: 0.75rem; /* 12px - Larger, more modern */
+
+  /* Sidebar (if used) */
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.68 0.16 277);
-  --sidebar-primary-foreground: oklch(0.96 0.02 272);
+  --sidebar-primary: oklch(0.91 0.25 195);
+  --sidebar-primary-foreground: oklch(0.141 0.005 285.823);
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+  --sidebar-border: oklch(0.274 0.006 286.033);
+  --sidebar-ring: oklch(0.91 0.25 195);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    /* Force dark mode always */
+    color-scheme: dark;
+  }
+
+  /* Ensure all text is readable */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-foreground;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-lg;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+/* Utility classes for NomadDarts theme */
+@layer utilities {
+  .text-cyan-glow {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+
+  .border-cyan-glow {
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+
+  .bg-charcoal {
+    background-color: #0d0d0d;
+  }
+
+  .bg-charcoal-light {
+    background-color: #151515;
   }
 }

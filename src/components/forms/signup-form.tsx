@@ -21,7 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { signupSchema, type SignupSchema } from "@/lib/schema/auth-schema"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "../ui/input-group"
 import { IconEye, IconEyeOff } from "@tabler/icons-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
@@ -37,20 +37,18 @@ export function SignupForm({
         register,
         handleSubmit,
         reset,
-        watch,
+        getValues,
         setError,
         formState: { errors, isSubmitting },
     } = useForm<SignupSchema>({
         resolver: zodResolver(signupSchema),
     })
-
-    const passwordValue = watch("password");
     const onSubmit = async (data: SignupSchema) => {
         try {
             setErrorMessage(null);
             const supabase = createClient();
 
-            const { data: signUpData, error } = await supabase.auth.signUp({
+            const { error } = await supabase.auth.signUp({
                 email: data.email,
                 password: data.password
             });
@@ -79,10 +77,10 @@ export function SignupForm({
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card>
-                <CardHeader>
-                    <CardTitle>Sign up to your account</CardTitle>
+                <CardHeader className="text-center">
+                    <CardTitle>Create Account</CardTitle>
                     <CardDescription>
-                        Enter your email below to sign up to your account
+                        Start tracking your darts stats
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -146,12 +144,8 @@ export function SignupForm({
                                         placeholder="Confirm your password"
                                         type={showPassword ? "text" : "password"}
                                         {...register("confirmPassword", {
-                                            validate: (value) => {
-                                                if (value !== passwordValue) {
-                                                    return "Passwords do not match";
-                                                }
-                                                return true;
-                                            }
+                                            validate: (value) =>
+                                                value === getValues("password") || "Passwords do not match"
                                         })}
                                         aria-invalid={errors.confirmPassword ? true : false}
                                     />
@@ -177,10 +171,6 @@ export function SignupForm({
                             </Field>
 
                             <Field>
-                                <Button type="submit" disabled={isSubmitting}>
-                                    {isSubmitting ? "Signing up..." : "Sign up"}
-                                </Button>
-
                                 {
                                     errorMessage && (
                                         <FieldDescription className="text-destructive">
@@ -188,11 +178,26 @@ export function SignupForm({
                                         </FieldDescription>
                                     )
                                 }
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? "Signing up..." : "Sign up"}
+                                </Button>
+
+
+
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-border/50" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs">
+                                        <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                                    </div>
+                                </div>
+
                                 <Button variant="outline" type="button">
                                     Sign up with Google
                                 </Button>
                                 <FieldDescription className="text-center">
-                                    Already have an account? <Link href="/auth/login">Login</Link>
+                                    Already have an account? <Link href="/auth/login" className="text-primary hover:underline font-medium">Login</Link>
                                 </FieldDescription>
                             </Field>
                         </FieldGroup>
