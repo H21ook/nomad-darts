@@ -1,17 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { IconArrowLeft, IconTrophy, IconTarget } from '@tabler/icons-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { createClient } from '@/lib/supabase/client';
+import { Match } from '@/types/darts';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClient();
 
 export default function Dashboard() {
-    const [matches, setMatches] = useState<any[]>([]);
+    const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -22,7 +20,7 @@ export default function Dashboard() {
                 .order('created_at', { ascending: false })
                 .limit(10);
 
-            if (data) setMatches(data);
+            if (data) setMatches(data as Match[]);
             setLoading(false);
         }
         loadStats();
@@ -88,8 +86,8 @@ export default function Dashboard() {
                                         <li key={m.id} className="flex justify-between items-center p-3 rounded-lg bg-background/50 border border-border/30">
                                             <span className="font-medium">{m.game_type}</span>
                                             <span className={`text-xs px-2 py-1 rounded-full ${m.status === 'finished'
-                                                    ? 'bg-green-500/20 text-green-400'
-                                                    : 'bg-yellow-500/20 text-yellow-400'
+                                                ? 'bg-green-500/20 text-green-400'
+                                                : 'bg-yellow-500/20 text-yellow-400'
                                                 }`}>
                                                 {m.status}
                                             </span>

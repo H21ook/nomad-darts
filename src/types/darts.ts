@@ -12,7 +12,7 @@ export interface MatchSettings {
   startingScore: number;
   legsToWinSet: number;
   setsToWinMatch: number;
-  players: [string, string]; // Names
+  players: string[]; // Names
 }
 
 export interface Throw {
@@ -26,6 +26,15 @@ export interface Turn {
   playerId: string;
   throws: Throw[];
   startScore: number; // Score before this turn
+}
+
+export interface Match {
+  id: string;
+  user_id: string;
+  settings: MatchSettings;
+  game_type: GameType;
+  status: "setup" | "playing" | "finished";
+  winnerId: string | null;
 }
 
 export interface MatchState {
