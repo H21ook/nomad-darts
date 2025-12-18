@@ -1,114 +1,165 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
-import { cn } from '@/lib/utils';
-// import { Vibration } from 'react-native'; // Not available in web, use navigator.vibrate
+import { useState } from 'react';
+import { checkFinishablePoint, cn } from '@/lib/utils';
+import { IconBackspace, IconCheck, IconTargetArrow, IconX, IconTrophy, IconRotateClockwise2 } from '@tabler/icons-react';
+import FastButton from './FastButton';
 
 interface NumberPadProps {
     onSubmit: (score: number) => void;
+    onUndo?: () => void;
+    canUndo?: boolean;
+    currentScore: number; // Тухайн тоглогчийн үлдэгдэл оноо
     className?: string;
 }
 
-export function NumberPad({ onSubmit, className }: NumberPadProps) {
+export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPadProps) {
     const [value, setValue] = useState('');
+    const [displayMode, setDisplayMode] = useState<'number' | 'text'>('number');
 
-    const handlePress = useCallback((num: number) => {
+    const canFinish = checkFinishablePoint(currentScore);
+
+    const handlePress = (num: number) => {
+        setDisplayMode('number');
         setValue(prev => {
-            // Limit to 3 digits (180 is max, actually we can type up to 180, but 999 is theoretical max input limit)
-            if (prev.length >= 3) return prev;
+            if (prev.length >= 3 || displayMode === 'text') return num.toString();
             const next = prev + num.toString();
-            if (parseInt(next) > 180) return prev; // Max score in one turn
-            return next;
+            return parseInt(next) > 180 ? prev : next;
         });
-        if (typeof navigator !== 'undefined') navigator.vibrate?.(10);
-    }, []);
+        navigator.vibrate?.(5);
+    };
 
-    const handleBackspace = useCallback(() => {
-        setValue(prev => prev.slice(0, -1));
+    const handleClear = () => {
+        setValue('');
         if (typeof navigator !== 'undefined') navigator.vibrate?.(15);
-    }, []);
+    };
 
-    const handleSubmit = useCallback(() => {
+    const handleStrategyClick = (type: 'BUST' | 'BULL' | 'FINISH') => {
+        setDisplayMode('text');
+        if (type === 'BUST') setValue('BUST');
+        if (type === 'BULL') setValue('BULL');
+        if (type === 'FINISH') setValue(currentScore.toString());
+        navigator.vibrate?.(10);
+    };
+
+    const handleClearOrUndo = () => {
+        if (value) {
+            setValue('');
+            setDisplayMode('number');
+        } else if (canUndo) {
+            onUndo?.();
+        }
+        navigator.vibrate?.(15);
+    };
+
+    const handleSubmit = () => {
         if (!value) return;
-        onSubmit(parseInt(value, 10));
-        setValue('');
-        if (typeof navigator !== 'undefined') navigator.vibrate?.(20);
-    }, [value, onSubmit]);
 
-    const handleQuickScore = useCallback((score: number) => {
-        onSubmit(score);
-        setValue('');
-        if (typeof navigator !== 'undefined') navigator.vibrate?.(20);
-    }, [onSubmit]);
+        let finalScore = 0;
+        if (value === 'BUST') finalScore = 0;
+        else if (value === 'BULL') finalScore = 50;
+        else if (value === 'FINISH') finalScore = currentScore;
+        else finalScore = parseInt(value);
 
-    // Keyboard support
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key >= '0' && e.key <= '9') {
-                handlePress(parseInt(e.key));
-            } else if (e.key === 'Backspace') {
-                handleBackspace();
-            } else if (e.key === 'Enter') {
-                handleSubmit();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handlePress, handleBackspace, handleSubmit]);
+        onSubmit(finalScore);
+        setValue('');
+        setDisplayMode('number');
+    };
 
     return (
-        <div className={cn("flex flex-col gap-4 p-4 pb-8 bg-[#0D0D0D]", className)}>
-            {/* Display */}
-            <div className="h-16 flex items-center justify-center bg-gray-900 rounded-xl border border-gray-800 mb-2">
-                <span className={cn("text-4xl font-mono text-cyan-400 font-bold tracking-widest", !value && "opacity-30")}>
-                    {value || "0"}
-                </span>
+        <div className="flex flex-col h-full w-full p-2 gap-2 bg-black select-none touch-none">
+
+            {/* Display - Төвдөө голлуулсан */}
+            <div className="flex-[0.8] min-h-[70px] relative">
+                <div className="h-full flex items-center justify-center bg-zinc-900/40 rounded-2xl border border-white/5 overflow-hidden">
+                    <span className={cn(
+                        "text-5xl font-mono font-black tracking-widest tabular-nums",
+                        value ? (value === 'BUST' ? "text-red-500" : "text-cyan-400") : "text-white/5"
+                    )}>
+                        {value || "0"}
+                    </span>
+
+                    {value && (
+                        <button
+                            onClick={handleClear}
+                            className="absolute right-4 p-4 text-zinc-500 active:text-white"
+                        >
+                            <IconBackspace size={24} />
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex gap-2 justify-between mb-2">
-                {[26, 41, 45, 60, 100, 140, 180].map((score) => (
-                    <button
-                        key={score}
-                        onClick={() => handleQuickScore(score)}
-                        className="flex-1 py-2 bg-gray-800 rounded-md text-gray-300 text-xs font-bold hover:bg-gray-700 active:bg-cyan-900 transition-colors"
-                    >
-                        {score}
-                    </button>
-                ))}
+            {/* Strategy Shortcuts */}
+            <div className="flex-[0.6] grid grid-cols-3 gap-2">
+                <button
+                    onPointerDown={(e) => { e.preventDefault(); handleStrategyClick('BUST'); }}
+                    className={cn(
+                        "flex flex-col items-center justify-center rounded-xl border transition-all duration-75 active:scale-95",
+                        value === 'BUST' ? "bg-red-500 text-black" : "bg-red-500/10 border-red-500/20 text-red-500"
+                    )}
+                >
+                    <IconX size={18} />
+                    <span className="text-[10px] font-black mt-1">BUST</span>
+                </button>
+                <button
+                    onPointerDown={(e) => { e.preventDefault(); handleStrategyClick('BULL'); }}
+                    className={cn(
+                        "flex flex-col items-center justify-center rounded-xl border transition-all duration-75 active:scale-95",
+                        value === '50' ? "bg-green-500 text-black" : "bg-green-500/10 border-green-500/20 text-green-500"
+                    )}
+                >
+                    <IconTargetArrow size={18} />
+                    <span className="text-[10px] font-black mt-1">BULL</span>
+                </button>
+                <button
+                    disabled={!canFinish}
+                    onPointerDown={(e) => { if (canFinish) { e.preventDefault(); handleStrategyClick('FINISH'); } }}
+                    className={cn(
+                        "flex flex-col items-center justify-center rounded-xl border transition-all duration-75 active:scale-95",
+                        !canFinish ? "bg-zinc-900 border-white/5 text-zinc-700 opacity-30" :
+                            value === 'FINISH' ? "bg-cyan-500 text-black" : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
+                    )}
+                >
+                    <IconTrophy size={18} />
+                    <span className="text-[10px] font-black mt-1">FINISH</span>
+                </button>
             </div>
 
-            {/* Number Grid */}
-            <div className="grid grid-cols-3 gap-3 flex-1">
+            {/* Number Grid - Хэт хурдан хариу үйлдэл */}
+            <div className="flex-4 grid grid-cols-3 grid-rows-4 gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                    <button
+                    <FastButton
                         key={num}
-                        onClick={() => handlePress(num)}
-                        className="h-16 bg-gray-800 rounded-xl text-2xl font-bold text-white shadow-lg active:scale-95 transition-transform active:bg-cyan-600 border-b-4 border-gray-950 active:border-b-0 active:translate-y-1"
+                        onPress={() => handlePress(num)}
                     >
                         {num}
-                    </button>
+                    </FastButton>
                 ))}
 
-                <button
-                    onClick={handleBackspace}
-                    className="h-16 bg-red-900/30 rounded-xl text-xl font-bold text-red-400 active:scale-95 transition-transform border border-red-900/50"
+                <FastButton
+                    variant="undo"
+                    onPress={handleClearOrUndo}
+                    className={value ? "text-zinc-300 bg-zinc-800" : ""}
                 >
-                    DEL
-                </button>
+                    <div className="flex flex-col items-center">
+                        <IconRotateClockwise2 size={24} />
+                        <span className="text-[9px] font-bold mt-1 tracking-tighter">
+                            {value ? "CLEAR" : "UNDO"}
+                        </span>
+                    </div>
+                </FastButton>
 
-                <button
-                    onClick={() => handlePress(0)}
-                    className="h-16 bg-gray-800 rounded-xl text-2xl font-bold text-white shadow-lg active:scale-95 transition-transform border-b-4 border-gray-950 active:border-b-0 active:translate-y-1"
-                >
+                <FastButton onPress={() => handlePress(0)}>
                     0
-                </button>
+                </FastButton>
 
-                <button
-                    onClick={handleSubmit}
-                    className="h-16 bg-cyan-600 rounded-xl text-xl font-bold text-black shadow-[0_0_15px_rgba(0,255,255,0.3)] active:scale-95 transition-transform border-b-4 border-cyan-800 active:border-b-0 active:translate-y-1"
+                <FastButton
+                    variant="submit"
+                    onPress={handleSubmit}
+                    disabled={!value}
                 >
-                    ENTER
-                </button>
+                    <IconCheck size={36} stroke={3} />
+                </FastButton>
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { MatchState, MatchSettings } from "../../types/darts";
 import { nanoid } from "nanoid";
+import { RootState } from "./store";
 
 const initialState: MatchState = {
   matchId: null,
@@ -131,4 +132,6 @@ const matchSlice = createSlice({
 });
 
 export const { startMatch, submitTurn, undo } = matchSlice.actions;
+export const selectCanUndo = (state: RootState) =>
+  state.match.history.length > 0;
 export default matchSlice.reducer;
