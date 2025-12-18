@@ -1,18 +1,23 @@
-export type GameType = "301" | "501";
+export type GameType = "X01" | "CRICKET" | "PRACTICE";
 
-export interface Player {
-  id: string; // 'player1' | 'player2' for local, or UUID for auth
+export interface PlayerInit {
+  id: string;
   name: string;
-  score: number; // Current leg score (e.g., 501 -> 0)
+  isError?: boolean;
+}
+export interface Player extends PlayerInit {
+  score: number;
   legsWon: number;
   setsWon: number;
+  order: number;
 }
 
 export interface MatchSettings {
   startingScore: number;
-  legsToWinSet: number;
-  setsToWinMatch: number;
-  players: string[]; // Names
+  firstToSets: number;
+  firstToLegs: number;
+  players: PlayerInit[];
+  setsEnabled: boolean;
 }
 
 export interface Throw {

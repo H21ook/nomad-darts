@@ -1,211 +1,330 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { startMatch } from '@/lib/redux/matchSlice';
-import { useRouter } from 'next/navigation';
-import { IconArrowLeft, IconPlus, IconTarget, IconTrash, IconUser } from '@tabler/icons-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { AppBar } from '@/components/ui/app-bar';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import PlayerList from './PlayerList';
+import { PlayerInit } from '@/types/darts';
+import { nanoid } from 'nanoid';
 
-type GameMode = 101 | 201 | 301 | 501;
+type StartingScore = 101 | 201 | 301 | 501;
 type CheckoutType = 'double' | 'straight';
 type FormatType = 'sets' | 'legs';
 
+const DEFAULT_PLAYERS: PlayerInit[] = [
+    { id: nanoid(), name: 'Player 1' },
+    { id: nanoid(), name: 'Player 2' },
+];
+
 export function MatchSetup() {
     const dispatch = useAppDispatch();
-    const [playersList, setPlayersList] = useState<string[]>(['', '']);
-    const router = useRouter();
-
-    const [gameMode, setGameMode] = useState<GameMode>(501);
-    const [format, setFormat] = useState<FormatType>('sets');
-    const [setsToWin, setSetsToWin] = useState(3);
-    const [legsPerSet, setLegsPerSet] = useState(5);
+    const [step, setStep] = useState(1);
+    const [direction, setDirection] = useState(0);
+    const [playersList, setPlayersList] = useState<PlayerInit[]>(DEFAULT_PLAYERS);
+    const [startingScore, setStartingScore] = useState<StartingScore>(501);
+    const [format, setFormat] = useState<FormatType>('legs');
+    const [firstToSets, setFirstToSets] = useState(1);
+    const [firstToLegs, setFirstToLegs] = useState(3);
     const [checkout, setCheckout] = useState<CheckoutType>('double');
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const startingScores: StartingScore[] = [101, 201, 301, 501];
+
+    const variants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? '100%' : '-100%',
+            opacity: 0
+        }),
+        center: {
+            x: 0,
+            opacity: 1
+        },
+        exit: (direction: number) => ({
+            x: direction < 0 ? '100%' : '-100%',
+            opacity: 0
+        })
+    };
 
     const handleStart = () => {
+
+        const newErrorIndices: number[] = [];
+        playersList.forEach((player, index) => {
+            if (!player.name.trim()) {
+                newErrorIndices.push(index);
+            }
+        });
+
+        if (newErrorIndices.length > 0) {
+            setPlayersList(playersList.map((player, index) => ({
+                ...player,
+                isError: newErrorIndices.includes(index)
+            })));
+            return;
+        }
+
         dispatch(startMatch({
-            startingScore: gameMode,
-            setsToWinMatch: setsToWin,
-            legsToWinSet: legsPerSet,
-            players: playersList
+            startingScore: startingScore,
+            firstToSets: format === 'sets' ? firstToSets : 1,
+            firstToLegs: firstToLegs,
+            players: playersList,
+            setsEnabled: format === 'sets'
         }));
         router.push('/match');
     };
 
-    const handleAddPlayer = () => {
-        setPlayersList(prev => [...prev, '']);
+    const handleNext = () => {
+        setDirection(1);
+        window.history.pushState({ step: 2 }, '', `${pathname}#order`);
+        setStep(2);
     };
 
-    const handleRemovePlayer = (index: number) => {
-        setPlayersList(prev => {
-            const newPlayers = [...prev];
-            newPlayers.splice(index, 1);
-            return newPlayers;
-        });
+    const handleBack = () => {
+        window.history.back();
     };
 
-    const handlePlayerNameChange = (index: number, name: string) => {
-        setPlayersList(prev => {
-            const newPlayers = [...prev];
-            newPlayers[index] = name;
-            return newPlayers;
-        });
-    };
-    const gameModes: GameMode[] = [101, 201, 301, 501];
+    useEffect(() => {
+        if (window.location.hash === '#order') {
+            window.history.back();
+        }
+    }, [])
+
+    useEffect(() => {
+        // Refresh хийх үед #order байвал арилгах (Таны хүссэнээр)
+        if (window.location.hash === '#order') {
+            window.history.replaceState(null, '', pathname);
+        }
+
+        const handlePopState = () => {
+            if (window.location.hash === '#order') {
+                setDirection(1);
+                setStep(2);
+            } else {
+                setDirection(-1);
+                setStep(1);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [pathname]);
 
     return (
-        <div className="flex flex-col min-h-full w-full text-foreground">
-            <AppBar title="Match Setup" onBack={() => router.back()} />
+        <div className="flex flex-col h-dvh w-full text-foreground overflow-hidden">
+            <AppBar title={step === 1 ? "Match Setup" : "Player Order"}
+                onBack={step === 1 ? () => router.back() : handleBack} />
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 pb-24">
-                {/* Game Mode Selection */}
-                <div>
-                    <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                        Starting Score
-                    </label>
-                    <div className="mt-2 w-full">
-                        <Select value={gameMode.toString()} onValueChange={(value) => setGameMode(Number(value) as GameMode)}>
-                            <SelectTrigger className="w-full text-base">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent position='popper' align='start' sideOffset={4} className="p-2">
-                                {gameModes.map((mode) => (
-                                    <SelectItem key={mode} value={mode.toString()} className="text-base">
-                                        {mode}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+            <div className="relative flex-1 overflow-hidden">
+                <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+                    {step === 1 ? (
+                        <motion.div
+                            key="step1"
+                            custom={direction}
+                            variants={variants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            className="absolute inset-0 px-4 py-6 space-y-6 pb-24 overflow-y-auto"
+                        >
+                            {/* Game Mode Selection */}
+                            <div>
+                                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                    Starting Score
+                                </label>
+                                <div className="grid grid-cols-4 flex-1 gap-2 mt-2">
+                                    {startingScores.map((score) => (
+                                        <button
+                                            key={score}
+                                            onClick={() => setStartingScore(score)}
+                                            className={cn(
+                                                "h-12 rounded-xl transition-all text-center font-mono font-bold text-2xl",
+                                                "border-2",
+                                                startingScore === score
+                                                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30"
+                                                    : "bg-card/60 border-primary/30 text-foreground hover:bg-primary/20 hover:border-primary"
+                                            )}
+                                        >
+                                            {score}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                {/* Players */}
-                <div>
-                    <div className="flex items-center gap-2 justify-between">
-                        <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                            Players
-                        </label>
-                        <Button variant="ghost" size="sm" className="shrink-0" onClick={handleAddPlayer}>
-                            <IconPlus /> Add Player
-                        </Button>
-                    </div>
+                            {/* Match Rules */}
+                            <div>
+                                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                    Match Rules
+                                </label>
 
-                    {/* Player 1 */}
-                    <div className='space-y-2 mt-2'>
-                        {
-                            playersList.map((playerName, index) => (
-                                <div key={index} className="flex gap-2">
-                                    <div className="relative w-full">
-                                        <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-3 pointer-events-none z-10">
-                                            <div className="size-9 rounded-full bg-primary/20 flex items-center justify-center">
-                                                <IconUser size={20} className="text-primary" />
-                                            </div>
+                                <div className='space-y-4 mt-2'>
+                                    {/* Checkout */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-base font-medium">Checkout</span>
+                                        <div className="bg-card/50 rounded-xl p-1 border border-border/30">
+                                            <button
+                                                onClick={() => setCheckout('double')}
+                                                className={cn(
+                                                    "h-10 rounded-lg transition-all font-bold px-2",
+                                                    checkout === 'double'
+                                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40"
+                                                        : "hover:bg-primary/20"
+                                                )}
+                                            >
+                                                Double Out
+                                            </button>
+                                            <button
+                                                onClick={() => setCheckout('straight')}
+                                                className={cn(
+                                                    "h-10 rounded-lg transition-all font-bold px-2",
+                                                    checkout === 'straight'
+                                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40"
+                                                        : "hover:bg-primary/20"
+                                                )}
+                                            >
+                                                Straight Out
+                                            </button>
                                         </div>
-                                        <input
-                                            value={playerName}
-                                            onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                                            className="w-full bg-card/50 border border-primary/30 rounded-xl py-3 px-14 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none transition-colors text-base"
-                                            placeholder={`Player ${index + 1}`}
-                                        />
-                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-10">
-                                            <Button variant="ghost" size={"icon"} onClick={() => handleRemovePlayer(index)} className='rounded-full text-destructive bg-destructive/10 hover:bg-destructive/20 hover:text-destructive transition-colors'>
-                                                <IconTrash size={20} />
-                                            </Button>
+                                    </div>
+
+                                    {/* Format Toggle */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-base font-medium">Format</span>
+                                        <div className="bg-card/50 rounded-xl p-1 border border-border/30">
+                                            <button
+                                                onClick={() => setFormat('legs')}
+                                                className={cn(
+                                                    "h-10 rounded-lg transition-all font-bold px-2",
+                                                    format === 'legs'
+                                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40"
+                                                        : "hover:bg-primary/20"
+                                                )}
+                                            >
+                                                Legs
+                                            </button>
+                                            <button
+                                                onClick={() => setFormat('sets')}
+                                                className={cn(
+                                                    "h-10 rounded-lg transition-all font-bold px-2",
+                                                    format === 'sets'
+                                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40"
+                                                        : "hover:bg-primary/20"
+                                                )}
+                                            >
+                                                Sets
+                                            </button>
+
+                                        </div>
+                                    </div>
+
+                                    {/* Sets counter (Showing when format is sets) */}
+                                    {
+                                        format === "sets" ? (
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-base font-medium">First to {firstToSets} sets</span>
+                                                <div className="flex items-center gap-2 bg-card/50 rounded-xl p-1 border border-border/30">
+                                                    <button
+                                                        onClick={() => setFirstToSets(Math.max(1, firstToSets - 1))}
+                                                        className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors text-xl font-bold"
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <span className="w-10 text-center font-mono font-bold text-2xl">{firstToSets}</span>
+                                                    <button
+                                                        onClick={() => setFirstToSets(firstToSets + 1)}
+                                                        className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors text-xl font-bold"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : null
+                                    }
+
+
+                                    {/* Legs counter */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-base font-medium">{format === "sets" ? "Legs per set (Best of)" : `First to ${firstToLegs} legs`}</span>
+                                        <div className="flex items-center gap-2 bg-card/50 rounded-xl p-1 border border-border/30">
+                                            <button
+                                                onClick={() => {
+                                                    const step = format === 'sets' ? 2 : 1;
+                                                    setFirstToLegs(Math.max(1, firstToLegs - step));
+                                                }}
+                                                className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors text-xl font-bold"
+                                            >
+                                                −
+                                            </button>
+                                            <span className="w-10 text-center font-mono font-bold text-2xl">{firstToLegs}</span>
+                                            <button
+                                                onClick={() => {
+                                                    const step = format === 'sets' ? 2 : 1;
+                                                    setFirstToLegs(firstToLegs + step);
+                                                }}
+                                                className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors text-xl font-bold"
+                                            >
+                                                +
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            ))
-                        }
-
-
-                    </div>
-                </div>
-
-                {/* Match Rules */}
-                <div>
-                    <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                        Match Rules
-                    </label>
-
-                    <div className='space-y-4 mt-2'>
-                        {/* Checkout */}
-                        <div className="flex items-center justify-between">
-                            <span className="text-base font-medium">Checkout</span>
-                            <Tabs value={checkout} onValueChange={(value) => setCheckout(value as CheckoutType)}>
-                                <TabsList>
-                                    <TabsTrigger value="double">Double</TabsTrigger>
-                                    <TabsTrigger value="straight">Straight</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-
-                        {/* Format Toggle */}
-                        <div className="flex items-center justify-between">
-                            <span className="text-base font-medium">Format</span>
-                            <Tabs value={format} onValueChange={(value) => setFormat(value as FormatType)}>
-                                <TabsList>
-                                    <TabsTrigger value="sets">Sets</TabsTrigger>
-                                    <TabsTrigger value="legs">Legs</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-
-                        {/* Sets to Win */}
-                        <div className="flex items-center justify-between">
-                            <span className="text-base font-medium">Sets to Win</span>
-                            <div className="flex items-center gap-4 bg-card/50 rounded-xl px-4 py-2 border border-border/30">
-                                <button
-                                    onClick={() => setSetsToWin(Math.max(1, setsToWin - 1))}
-                                    className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors active:scale-95 text-xl font-bold"
-                                >
-                                    −
-                                </button>
-                                <span className="w-10 text-center font-mono font-bold text-2xl">{setsToWin}</span>
-                                <button
-                                    onClick={() => setSetsToWin(setsToWin + 1)}
-                                    className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors active:scale-95 text-xl font-bold"
-                                >
-                                    +
-                                </button>
                             </div>
-                        </div>
-
-                        {/* Legs / Set */}
-                        <div className="flex items-center justify-between">
-                            <span className="text-base font-medium">Legs / Set</span>
-                            <div className="flex items-center gap-4 bg-card/50 rounded-xl px-4 py-2 border border-border/30">
-                                <button
-                                    onClick={() => setLegsPerSet(Math.max(1, legsPerSet - 1))}
-                                    className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors active:scale-95 text-xl font-bold"
+                            <div className="h-24" /> {/* Товчны зай */}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="step2"
+                            custom={direction}
+                            variants={variants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            className="absolute inset-0 px-4 py-6 space-y-6 pb-24"
+                        >
+                            <div className="flex justify-between items-center">
+                                <label className="text-sm font-bold uppercase text-muted-foreground">
+                                    Set Throwing Order
+                                </label>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPlayersList([...playersList].sort(() => Math.random() - 0.5))}
                                 >
-                                    −
-                                </button>
-                                <span className="w-10 text-center font-mono font-bold text-2xl">{legsPerSet}</span>
-                                <button
-                                    onClick={() => setLegsPerSet(legsPerSet + 1)}
-                                    className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors active:scale-95 text-xl font-bold"
-                                >
-                                    +
-                                </button>
+                                    Randomize
+                                </Button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+
+                            <PlayerList playersList={playersList} setPlayersList={setPlayersList} />
+                            <p className="text-center text-muted-foreground text-sm">
+                                The player at the top throws first.
+                            </p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Fixed Bottom Button */}
-            <div className="sticky bottom-0 bg-linear-to-t from-background via-background to-background/80 backdrop-blur-sm p-4 border-t border-border/30">
+            <div className="fixed bottom-0 left-0 right-0 p-5 bg-linear-to-t from-background via-background to-transparent">
                 <button
-                    onClick={handleStart}
-                    className="w-full py-4 bg-primary hover:bg-primary/90 text-black font-bold text-lg rounded-xl shadow-[0_0_30px_rgba(0,255,255,0.3)] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    onClick={step === 1 ? handleNext : handleStart}
+                    className={cn(
+                        "w-full h-16 rounded-2xl font-black text-xl tracking-wider",
+                        "bg-primary text-primary-foreground shadow-2xl",
+                        "hover:bg-primary/90 hover:shadow-primary/40 hover:shadow-2xl",
+                        "active:scale-[0.98] transition-all duration-200",
+                        "flex items-center justify-center gap-3",
+                        "border-4 border-primary/50",
+                        "disabled:opacity-50 disabled:cursor-not-allowed"
+                    )}
                 >
-                    <IconTarget size={22} />
-                    START MATCH
+                    {step === 1 ? "REVIEW ORDER" : "START MATCH"}
                 </button>
             </div>
-        </div>
+        </div >
     );
 }
