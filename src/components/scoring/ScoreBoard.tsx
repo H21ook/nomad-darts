@@ -10,51 +10,82 @@ interface ScoreBoardProps {
 
 export function ScoreBoard({ players, activePlayerIndex }: ScoreBoardProps) {
     return (
-        <div className="flex w-full bg-[#0D0D0D] pt-4">
+        <div className="flex w-full bg-black border-b border-white/5">
             {players.map((player, index) => {
                 const isActive = index === activePlayerIndex;
+                // Тоглогч бүрт өөр өнгө оноох (Жишээ нь 1: Cyan, 2: Rose)
+                const playerColorClass = index === 0 ? "cyan" : "rose";
+
                 return (
                     <div
                         key={player.id}
                         className={cn(
-                            "flex-1 flex flex-col items-center justify-center p-4 transition-colors duration-300 relative border-b-2",
-                            isActive ? "bg-[#1A1A1A] border-cyan-400" : "bg-[#0D0D0D] border-transparent opacity-50"
+                            "flex-1 flex flex-col items-center py-6 px-2 transition-all duration-500 relative",
+                            isActive
+                                ? index === 0 ? "bg-cyan-500/10" : "bg-rose-500/10"
+                                : "bg-transparent opacity-40"
                         )}
                     >
-                        {/* Active Indicator Glow */}
+                        {/* Active Indicator Bar - Хамгийн дээд талд */}
                         {isActive && (
                             <motion.div
-                                layoutId="active-glow"
-                                className="absolute inset-0 bg-cyan-500/5 z-0"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
+                                layoutId="active-bar"
+                                className={cn(
+                                    "absolute top-0 left-0 right-0 h-1",
+                                    index === 0 ? "bg-cyan-400" : "bg-rose-400"
+                                )}
                             />
                         )}
 
-                        <div className="z-10 text-center w-full">
-                            <h2 className={cn("text-lg font-bold mb-1 truncate px-2", isActive ? "text-cyan-400" : "text-gray-500")}>
+                        <div className="z-10 text-center w-full space-y-1">
+                            {/* Status - Нэрний дээд талд, жижигхэн */}
+                            <div className={cn(
+                                "text-[10px] font-black uppercase tracking-[0.2em] h-4 transition-colors",
+                                isActive
+                                    ? index === 0 ? "text-cyan-400" : "text-rose-400"
+                                    : "text-transparent"
+                            )}>
+                                {isActive ? "• Shooting" : ""}
+                            </div>
+
+                            <h2 className={cn(
+                                "text-xs font-bold uppercase tracking-widest truncate max-w-[120px] mx-auto",
+                                isActive ? "text-white" : "text-gray-500"
+                            )}>
                                 {player.name}
                             </h2>
 
-                            <div className="text-7xl font-mono font-bold tracking-tighter text-white tabular-nums my-2">
+                            <div className={cn(
+                                "text-7xl font-black font-mono tracking-tighter tabular-nums leading-none py-2",
+                                isActive ? "text-white" : "text-gray-600"
+                            )}>
                                 {player.score}
                             </div>
 
-                            {/* Sets / Legs */}
-                            <div className="flex justify-center gap-4 text-xs font-mono text-gray-400 mt-2">
-                                <div className="flex flex-col items-center">
-                                    <span className="uppercase text-[10px] tracking-wider text-gray-600">Sets</span>
-                                    <span className="text-xl font-bold text-white">{player.setsWon}</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <span className="uppercase text-[10px] tracking-wider text-gray-600">Legs</span>
-                                    <span className="text-xl font-bold text-white">{player.legsWon}</span>
-                                </div>
+                            {/* Sets & Legs - Илүү нягтралтай */}
+                            <div className="flex justify-center gap-6 pt-2">
+                                <MiniStat label="S" value={player.setsWon} active={isActive} />
+                                <MiniStat label="L" value={player.legsWon} active={isActive} />
+                                {/* <MiniStat label="AVG" value={player.average?.toFixed(1) || "0.0"} active={isActive} /> */}
                             </div>
                         </div>
+
+                        {/* Дунд талын зааглагч зураас (Зөвхөн эхний тоглогчийн ард) */}
+                        {index === 0 && (
+                            <div className="absolute right-0 top-1/4 bottom-1/4 w-[1px] bg-white/10" />
+                        )}
                     </div>
                 );
             })}
+        </div>
+    );
+}
+
+function MiniStat({ label, value, active }: { label: string, value: any, active: boolean }) {
+    return (
+        <div className="flex flex-col items-center">
+            <span className="text-[9px] font-bold text-gray-600 tracking-tighter leading-none mb-1">{label}</span>
+            <span className={cn("text-sm font-mono font-bold", active ? "text-gray-300" : "text-gray-600")}>{value}</span>
         </div>
     );
 }
