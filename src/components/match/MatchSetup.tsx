@@ -72,7 +72,8 @@ export function MatchSetup() {
             firstToSets: format === 'sets' ? firstToSets : 1,
             firstToLegs: firstToLegs,
             players: playersList,
-            setsEnabled: format === 'sets'
+            setsEnabled: format === 'sets',
+            checkout: checkout,
         }));
         router.push('/match');
     };

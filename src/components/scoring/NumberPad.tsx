@@ -3,18 +3,20 @@ import { useState } from 'react';
 import { checkFinishablePoint, cn } from '@/lib/utils';
 import { IconBackspace, IconCheck, IconTargetArrow, IconX, IconTrophy, IconRotateClockwise2 } from '@tabler/icons-react';
 import FastButton from './FastButton';
+import { FinishConfirmation } from './FinishConfirmation';
 
 interface NumberPadProps {
-    onSubmit: (score: number) => void;
+    onSubmit: (score: number, dartsUsed?: number) => void;
     onUndo?: () => void;
     canUndo?: boolean;
-    currentScore: number; // Тухайн тоглогчийн үлдэгдэл оноо
+    currentScore: number;
     className?: string;
 }
 
 export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPadProps) {
     const [value, setValue] = useState('');
     const [displayMode, setDisplayMode] = useState<'number' | 'text'>('number');
+    const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
     const canFinish = checkFinishablePoint(currentScore);
 
@@ -36,16 +38,13 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
     const handleStrategyClick = (type: 'BUST' | 'BULL' | 'FINISH') => {
         setDisplayMode('text');
         if (type === 'BUST') setValue('BUST');
-        if (type === 'BULL') setValue('BULL');
+        if (type === 'BULL') setValue('50');
         if (type === 'FINISH') setValue(currentScore.toString());
         navigator.vibrate?.(10);
     };
 
     const handleClearOrUndo = () => {
-        if (value) {
-            setValue('');
-            setDisplayMode('number');
-        } else if (canUndo) {
+        if (canUndo) {
             onUndo?.();
         }
         navigator.vibrate?.(15);
@@ -57,12 +56,24 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
         let finalScore = 0;
         if (value === 'BUST') finalScore = 0;
         else if (value === 'BULL') finalScore = 50;
-        else if (value === 'FINISH') finalScore = currentScore;
+        else if (value === 'FINISH') {
+            finalScore = currentScore;
+        }
         else finalScore = parseInt(value);
 
-        onSubmit(finalScore);
+        if (finalScore === currentScore) {
+            setShowFinishConfirm(true);
+            return;
+        }
+        onSubmit(finalScore, 3);
         setValue('');
         setDisplayMode('number');
+    };
+
+    const handleActualSubmit = (dartsUsed?: number) => {
+        onSubmit(currentScore, dartsUsed);
+        setValue('');
+        setShowFinishConfirm(false);
     };
 
     return (
@@ -139,12 +150,13 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                 <FastButton
                     variant="undo"
                     onPress={handleClearOrUndo}
-                    className={value ? "text-zinc-300 bg-zinc-800" : ""}
+                    disabled={!canUndo}
+                    className={canUndo ? "text-zinc-300 bg-zinc-800" : ""}
                 >
                     <div className="flex flex-col items-center">
                         <IconRotateClockwise2 size={24} />
                         <span className="text-[9px] font-bold mt-1 tracking-tighter">
-                            {value ? "CLEAR" : "UNDO"}
+                            {"UNDO"}
                         </span>
                     </div>
                 </FastButton>
@@ -161,6 +173,10 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                     <IconCheck size={36} stroke={3} />
                 </FastButton>
             </div>
+
+            {showFinishConfirm && (
+                <FinishConfirmation onConfirm={handleActualSubmit} onCancel={() => setShowFinishConfirm(false)} />
+            )}
         </div>
     );
 }
