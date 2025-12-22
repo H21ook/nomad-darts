@@ -2,6 +2,7 @@
 import { Player } from '@/types/darts';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface ScoreBoardProps {
     players: Player[];
@@ -9,70 +10,79 @@ interface ScoreBoardProps {
 }
 
 export function ScoreBoard({ players, activePlayerIndex }: ScoreBoardProps) {
+    const match = useAppSelector(state => state.match);
+    const active = match.active!;
+    const currentLeg = active.currentLeg;
     return (
         <div className="flex w-full bg-black border-b border-white/5">
             {players.map((player, index) => {
                 const isActive = index === activePlayerIndex;
-                // Тоглогч бүрт өөр өнгө оноох (Жишээ нь 1: Cyan, 2: Rose)
-                const playerColorClass = index === 0 ? "cyan" : "rose";
+                const playerColor = player.color || '#ffffff';
+
+                const currentLegTurns = currentLeg.turns || [];
+                const legDarts = currentLegTurns.filter(t => t.playerId === player.id).reduce((sum, t) => sum + (t.dartsUsed || 3), 0);
+                const legPoints = currentLegTurns.filter(t => t.playerId === player.id).reduce((sum, t) => sum + (t.isBust ? 0 : t.points), 0);
+                const legAvg = legDarts > 0 ? (legPoints / (legDarts / 3)).toFixed(1) : "0.0";
 
                 return (
                     <div
                         key={player.id}
                         className={cn(
-                            "flex-1 flex flex-col items-center py-6 px-2 transition-all duration-500 relative",
-                            isActive
-                                ? index === 0 ? "bg-cyan-500/10" : "bg-rose-500/10"
-                                : "bg-transparent opacity-40"
+                            "flex-1 flex flex-col items-center pt-4 pb-6 px-3 transition-all duration-500 relative overflow-hidden",
                         )}
+                        style={{
+                            backgroundColor: isActive ? `${playerColor}08` : 'transparent'
+                        }}
                     >
-                        {/* Active Indicator Bar - Хамгийн дээд талд */}
+                        {/* Active Indicator Bar */}
                         {isActive && (
                             <motion.div
                                 layoutId="active-bar"
-                                className={cn(
-                                    "absolute top-0 left-0 right-0 h-1",
-                                    index === 0 ? "bg-cyan-400" : "bg-rose-400"
-                                )}
+                                className="absolute top-0 left-0 right-0 h-[3px] z-20"
+                                style={{ backgroundColor: playerColor, boxShadow: `0 0 15px ${playerColor}` }}
                             />
                         )}
 
-                        <div className="z-10 text-center w-full space-y-1">
-                            {/* Status - Нэрний дээд талд, жижигхэн */}
-                            <div className={cn(
-                                "text-[10px] font-black uppercase tracking-[0.2em] h-4 transition-colors",
-                                isActive
-                                    ? index === 0 ? "text-cyan-400" : "text-rose-400"
-                                    : "text-transparent"
-                            )}>
-                                {isActive ? "• Shooting" : ""}
-                            </div>
-
+                        {/* Player Header */}
+                        <div className="z-10 text-center w-full mb-2">
                             <h2 className={cn(
-                                "text-xs font-bold uppercase tracking-widest truncate max-w-[120px] mx-auto",
-                                isActive ? "text-white" : "text-gray-500"
+                                "text-[10px] font-black uppercase tracking-[0.15em] truncate px-2",
+                                isActive ? "text-white" : "text-zinc-600"
                             )}>
                                 {player.name}
                             </h2>
-
-                            <div className={cn(
-                                "text-7xl font-black font-mono tracking-tighter tabular-nums leading-none py-2",
-                                isActive ? "text-white" : "text-gray-600"
-                            )}>
-                                {player.score}
-                            </div>
-
-                            {/* Sets & Legs - Илүү нягтралтай */}
-                            <div className="flex justify-center gap-6 pt-2">
-                                <MiniStat label="S" value={player.setsWon} active={isActive} />
-                                <MiniStat label="L" value={player.legsWon} active={isActive} />
-                                {/* <MiniStat label="AVG" value={player.average?.toFixed(1) || "0.0"} active={isActive} /> */}
-                            </div>
                         </div>
 
-                        {/* Дунд талын зааглагч зураас (Зөвхөн эхний тоглогчийн ард) */}
+                        {/* Main Score - Хамгийн том, тод */}
+                        <div className={cn(
+                            "text-7xl font-black font-mono tracking-tighter tabular-nums leading-[0.9] my-2 transition-all duration-300",
+                            isActive ? "text-white" : "text-zinc-600"
+                        )}
+                            style={isActive ? { textShadow: `0 0 30px ${playerColor}40` } : {}}
+                        >
+                            {player.score}
+                        </div>
+
+                        {/* Mini Stats Grid - 2 мөрөнд, нягт байрлалтай */}
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-4">
+                            <MiniStat label="SET" value={player.setsWon?.toString() || '0'} active={isActive} playerColor={playerColor} />
+                            <MiniStat label="LEG" value={player.legsWon?.toString() || '0'} active={isActive} playerColor={playerColor} />
+                            <MiniStat
+                                label="AVG"
+                                value={legAvg}
+                                active={isActive}
+                                playerColor={playerColor}
+                            />
+                            <MiniStat
+                                label="DART"
+                                value={legDarts?.toString() || '0'}
+                                active={isActive}
+                                playerColor={playerColor}
+                            />
+                        </div>
+
                         {index === 0 && (
-                            <div className="absolute right-0 top-1/4 bottom-1/4 w-[1px] bg-white/10" />
+                            <div className="absolute right-0 top-1/4 bottom-1/4 w-px bg-white/5" />
                         )}
                     </div>
                 );
@@ -81,11 +91,24 @@ export function ScoreBoard({ players, activePlayerIndex }: ScoreBoardProps) {
     );
 }
 
-function MiniStat({ label, value, active }: { label: string, value: any, active: boolean }) {
+function MiniStat({ label, value, active, playerColor }: { label: string, value: string, active: boolean, playerColor: string }) {
     return (
-        <div className="flex flex-col items-center">
-            <span className="text-[9px] font-bold text-gray-600 tracking-tighter leading-none mb-1">{label}</span>
-            <span className={cn("text-sm font-mono font-bold", active ? "text-gray-300" : "text-gray-600")}>{value}</span>
+        <div className="flex flex-col items-start min-w-[35px]">
+            <span className={cn(
+                "text-[7px] font-black tracking-widest uppercase mb-0.5",
+                active ? "opacity-40" : "opacity-20"
+            )}
+                style={{ color: active ? playerColor : '#fff' }}>
+                {label}
+            </span>
+            <span
+                className={cn(
+                    "text-xs font-black font-mono leading-none transition-colors",
+                    active ? "text-zinc-200" : "text-zinc-600"
+                )}
+            >
+                {value}
+            </span>
         </div>
     );
 }

@@ -1,17 +1,20 @@
 'use client';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
-import { selectCanUndo, submitTurn, undo, nextLeg } from '@/lib/redux/matchSlice';
+import { selectCanUndo, submitTurn, undo } from '@/lib/redux/matchSlice';
 import { ScoreBoard } from '@/components/scoring/ScoreBoard';
 import { NumberPad } from '@/components/scoring/NumberPad';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { LegTransition } from '@/components/scoring/LegTransition';
+import { MatchFinished } from '@/components/scoring/MatchFinished';
 
 export default function MatchPage() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const match = useAppSelector(state => state.match);
+    console.log("match state ", match)
+    const winner = match.winnerId ? match.players.find(p => p.id === match.winnerId) : null;
     const lastLegWinnerId = match.lastLegWinnerId;
     const lastLegWinner = match.players.find(p => p.id === lastLegWinnerId);
     const canUndo = useAppSelector(selectCanUndo);
@@ -31,10 +34,6 @@ export default function MatchPage() {
 
     const handleUndo = () => {
         dispatch(undo());
-    };
-
-    const handleNewMatch = () => {
-        router.replace('/');
     };
 
     if (match.status === 'setup') return null; // Or loading spinner
@@ -60,39 +59,51 @@ export default function MatchPage() {
 
     return (
         <div className="flex flex-col h-dvh bg-[#0D0D0D] overflow-hidden">
-            {/* Undo Header - Small absolute or top bar */}
-            {/* <div className="absolute top-4 left-4 z-50">
-                <button
-                    onClick={handleUndo}
-                    disabled={match.history.length === 0}
-                    className="p-2 bg-gray-800 rounded-full text-gray-400 disabled:opacity-30 hover:text-white"
-                >
-                    <IconArrowBackUp size={24} />
-                </button>
-            </div> */}
-
-            <div className="flex-none">
-                <ScoreBoard
-                    players={match.players}
-                    activePlayerIndex={currentPlayerIndex}
-                />
-            </div>
-
-            <div className="flex-1 flex flex-col justify-end pb-safe">
-                <NumberPad onSubmit={handleSubmit} className="flex-1" currentScore={match.players[currentPlayerIndex].score} onUndo={handleUndo} canUndo={canUndo} />
-            </div>
-
-            <AnimatePresence>
-                {match.status === 'leg_finished' && lastLegWinner && match.active && (
-                    <LegTransition
-                        winner={lastLegWinner}
-                        players={match.players}
-                        currentLeg={match.active.currentLeg}
-                        currentSet={match.active.currentSet}
-                        onNextLeg={() => dispatch(nextLeg())}
-                        onUndo={() => dispatch(undo())}
-                    />
-                )}
+            <AnimatePresence mode="popLayout">
+                {match.status === 'playing' ? (
+                    <motion.div
+                        key="gameplay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        // transition-ийг маш богино болгох (жишээ нь 0.1s)
+                        transition={{ duration: 0.1 }}
+                        className="flex-1 flex flex-col justify-end pb-safe"
+                    >
+                        <div className="flex-none">
+                            <ScoreBoard
+                                players={match.players}
+                                activePlayerIndex={currentPlayerIndex}
+                            />
+                        </div>
+                        <NumberPad
+                            onSubmit={handleSubmit}
+                            className="flex-1"
+                            currentScore={match.players[currentPlayerIndex].score}
+                            onUndo={handleUndo}
+                            canUndo={canUndo}
+                        />
+                    </motion.div>
+                ) : match.status === 'leg_finished' && lastLegWinner ? (
+                    <motion.div
+                        key="transition"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.1 }}
+                        className="absolute inset-0 z-50"
+                    >
+                        <LegTransition
+                            winner={lastLegWinner}
+                        />
+                    </motion.div>
+                ) : match.status === 'finished' && winner ? (
+                    <motion.div key="match-finished">
+                        <MatchFinished
+                            winner={winner}
+                        />
+                    </motion.div>
+                ) : null}
             </AnimatePresence>
         </div>
     );

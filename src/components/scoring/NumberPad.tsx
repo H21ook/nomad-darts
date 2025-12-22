@@ -4,6 +4,7 @@ import { checkFinishablePoint, cn } from '@/lib/utils';
 import { IconBackspace, IconCheck, IconTargetArrow, IconX, IconTrophy, IconRotateClockwise2 } from '@tabler/icons-react';
 import FastButton from './FastButton';
 import { FinishConfirmation } from './FinishConfirmation';
+import SubmitButton from './SubmitButton';
 
 interface NumberPadProps {
     onSubmit: (score: number, dartsUsed?: number) => void;
@@ -45,6 +46,7 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
 
     const handleClearOrUndo = () => {
         if (canUndo) {
+            console.trace("undo was called!");
             onUndo?.();
         }
         navigator.vibrate?.(15);
@@ -147,31 +149,31 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                     </FastButton>
                 ))}
 
-                <FastButton
-                    variant="undo"
-                    onPress={handleClearOrUndo}
+                <SubmitButton
+                    onClick={(e) => {
+                        e.preventDefault();
+                        handleClearOrUndo();
+                    }}
                     disabled={!canUndo}
-                    className={canUndo ? "text-zinc-300 bg-zinc-800" : ""}
+                    className='bg-red-500/20 text-red-500'
                 >
-                    <div className="flex flex-col items-center">
-                        <IconRotateClockwise2 size={24} />
-                        <span className="text-[9px] font-bold mt-1 tracking-tighter">
-                            {"UNDO"}
-                        </span>
-                    </div>
-                </FastButton>
+                    <IconRotateClockwise2 size={24} />
+                    <span className="text-[10px] font-black ml-0.5 mt-1 uppercase tracking-wider">
+                        Undo
+                    </span>
+                </SubmitButton>
 
                 <FastButton onPress={() => handlePress(0)}>
                     0
                 </FastButton>
 
-                <FastButton
-                    variant="submit"
-                    onPress={handleSubmit}
+                <SubmitButton
+                    onClick={handleSubmit}
                     disabled={!value}
+                    className='bg-cyan-500 text-black'
                 >
                     <IconCheck size={36} stroke={3} />
-                </FastButton>
+                </SubmitButton>
             </div>
 
             {showFinishConfirm && (

@@ -75,7 +75,7 @@ export interface Match {
 
 export interface MatchSnapshot {
   players: Player[];
-  active: Active;
+  active: Active | null;
   history: {
     completedSets: SetType[];
   };

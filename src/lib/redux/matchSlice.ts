@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, current, PayloadAction } from "@reduxjs/toolkit";
 import {
   MatchState,
   MatchSettings,
@@ -78,10 +78,20 @@ const createEmptySet = (): SetType => ({
 });
 
 const takeSnapshotState = (state: MatchState) => {
+  // const snapshot: MatchSnapshot = {
+  //   players: JSON.parse(JSON.stringify(state.players)),
+  //   active: JSON.parse(JSON.stringify(state.active)),
+  //   history: JSON.parse(JSON.stringify(state.history)),
+  //   status: state.status,
+  //   lastLegWinnerId: state.lastLegWinnerId,
+  // };
+
   const snapshot: MatchSnapshot = {
-    players: JSON.parse(JSON.stringify(state.players)),
-    active: JSON.parse(JSON.stringify(state.active)),
-    history: JSON.parse(JSON.stringify(state.history)),
+    players: current(state.players),
+    active: current(state.active),
+    history: {
+      completedSets: current(state.history.completedSets),
+    },
     status: state.status,
     lastLegWinnerId: state.lastLegWinnerId,
   };
@@ -96,7 +106,7 @@ const takeSnapshotState = (state: MatchState) => {
 
 const handleLegWin = (state: MatchState) => {
   if (state.active === null) return;
-  const activePlayerIndex = state.active?.playerIndex ?? 0;
+  const activePlayerIndex = state.active.playerIndex;
   const activePlayer = state.players[activePlayerIndex];
 
   // Leg-ийг одоогийн Set- рүү нэмэх
@@ -119,8 +129,8 @@ const handleLegWin = (state: MatchState) => {
       state.winnerId = activePlayer.id;
     } else {
       // Дараагийн сет эхлэх бэлтгэл
-      state.players.forEach((p) => (p.legsWon = 0));
-      state.active.currentSet = { id: nanoid(), legs: [], winnerId: null };
+      // state.players.forEach((p) => (p.legsWon = 0));
+      // state.active.currentSet = { id: nanoid(), legs: [], winnerId: null };
     }
   }
 };
@@ -250,12 +260,26 @@ const matchSlice = createSlice({
     },
     nextLeg: (state) => {
       if (state.active === null) return;
+      if (state.status === "playing") return;
+
+      // Зөвхөн leg дууссан үед л ажиллана
+      if (state.status !== "leg_finished") return;
 
       takeSnapshotState(state);
 
+      // Сет солигдож байгаа эсэр
+      const isNewSetStarting = state.players.some(
+        (p) => p.legsWon >= state.settings.firstToLegs
+      );
+
+      if (isNewSetStarting) {
+        state.players.forEach((p) => (p.legsWon = 0));
+        state.active.currentSet = { id: nanoid(), legs: [], winnerId: null };
+      }
+
       const completedSetsCount = state.history.completedSets.length;
 
-      // Одоогийн Сет дотор хэдэн Лег тоглож дууссаныг харах
+      // Сет доторх дууссан легийн тоо
       const legsInCurrentSet = state.active.currentSet.legs.length;
       let nextStartPlayerIndex: number;
 
