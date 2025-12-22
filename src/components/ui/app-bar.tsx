@@ -11,6 +11,7 @@ export interface AppBarProps extends React.HTMLAttributes<HTMLDivElement> {
     onBack?: () => void
     backHref?: string
     actions?: React.ReactNode
+    description?: string
 }
 
 export function AppBar({
@@ -19,6 +20,7 @@ export function AppBar({
     backHref,
     actions,
     className,
+    description,
     ...props
 }: AppBarProps) {
     const router = useRouter()
@@ -53,7 +55,10 @@ export function AppBar({
                 )}
 
                 {/* Title */}
-                <h1 className="text-lg font-bold flex-1 text-center">{title}</h1>
+                <div>
+                    <h1 className="text-lg font-bold flex-1 text-center">{title}</h1>
+                    {description && <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{description}</p>}
+                </div>
 
                 {/* Actions or Spacer */}
                 <div className="w-10 flex items-center justify-end">
