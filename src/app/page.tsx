@@ -1,101 +1,89 @@
+"use client";
+
 import Link from 'next/link';
-import { IconTarget, IconLogin, IconUserPlus } from '@tabler/icons-react';
+import { IconTarget, IconLogin, IconUserPlus, IconChartBar, IconPlayerPlayFilled } from '@tabler/icons-react';
 
 export default function Home() {
   return (
-    <main className="min-h-dvh bg-background flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Animated Background Gradients */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 -right-4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
-      </div>
+    <main className="h-dvh bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Subtle Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-size-[50px_50px] pointer-events-none" />
-
-      <div className="w-full max-w-md space-y-12 relative z-10">
+      <div className="w-full max-w-sm space-y-10 relative z-10">
         {/* Logo & Branding */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-              <IconTarget size={64} className="text-primary relative z-10 drop-shadow-[0_0_15px_rgba(0,255,255,0.5)]" strokeWidth={1.5} />
+        <div className="text-center space-y-3">
+          <div className="flex justify-center mb-4">
+            <div className="relative p-3 rounded-2xl bg-white/5 ring-1 ring-white/10 shadow-sm">
+              <IconTarget size={32} className="text-primary" strokeWidth={2} />
             </div>
           </div>
 
-          <h1 className="text-5xl font-extrabold text-foreground tracking-tight">
-            Nomad<span className="text-primary text-cyan-glow">Darts</span>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
+            NOMAD<span className="text-primary">DARTS</span>
           </h1>
-          <p className="text-lg text-muted-foreground font-medium">
-            Professional Scoring Engine
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-[0.2em] opacity-80">
+            The simple way to track your score
           </p>
         </div>
 
-        {/* Action Cards */}
-        <div className="space-y-4">
-          {/* Guest Mode - Glassmorphism */}
-          <Link
-            href="/match/setup"
-            className="group block w-full relative"
-          >
-            <div className="absolute -inset-1 bg-linear-to-r from-primary/30 via-primary/20 to-primary/30 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
-            <div className="relative bg-primary hover:bg-primary/90 p-6 rounded-2xl shadow-2xl transition-all duration-300 group-hover:scale-[1.02] active:scale-[0.98]">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-primary-foreground mb-1">
-                    Start Game
-                  </h2>
-                  <p className="text-sm text-primary-foreground/70">
-                    Play instantly without login
-                  </p>
+        {/* Action Cards Container */}
+        <div className="grid gap-3">
+          {/* Quick Start Card */}
+          <Link href="/match/setup" className="group block relative">
+            <div className="relative bg-white/5 border border-white/5 p-4 rounded-xl transition-colors hover:bg-white/10 hover:border-white/10">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <IconPlayerPlayFilled size={20} />
                 </div>
-                <IconTarget size={40} className="text-primary-foreground/80 group-hover:rotate-12 transition-transform" />
+                <div className="flex-1">
+                  <h2 className="text-base font-semibold text-foreground">Quick Start</h2>
+                  <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider opacity-70">Play as a guest</p>
+                </div>
               </div>
             </div>
           </Link>
 
-          {/* Login - Glassmorphism */}
-          <Link
-            href="/auth/login"
-            className="group block w-full relative"
-          >
-            <div className="absolute -inset-0.5 bg-linear-to-r from-primary/10 to-primary/5 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 hover:border-primary/30 p-6 rounded-2xl transition-all duration-300 group-hover:scale-[1.02] active:scale-[0.98]">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-foreground mb-1">
-                    Login
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Track stats & match history
-                  </p>
+          {/* Login/Connect Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/auth/login" className="group block relative h-full">
+              <div className="relative bg-white/5 border border-white/5 p-4 rounded-xl h-full flex flex-col justify-between transition-colors hover:bg-white/10 hover:border-white/10">
+                <IconLogin size={20} className="text-primary mb-3" />
+                <div>
+                  <h3 className="text-sm font-semibold">Sign In</h3>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider opacity-70 mt-1">Track stats</p>
                 </div>
-                <IconLogin size={36} className="text-primary group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
-          </Link>
+            </Link>
 
-          {/* Sign Up Link */}
-          <div className="text-center pt-4">
-            <Link
-              href="/auth/sign-up"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-            >
-              <IconUserPlus size={20} />
-              <span className="text-sm font-medium">Create an account</span>
+            <Link href="/auth/sign-up" className="group block relative h-full">
+              <div className="relative bg-white/5 border border-white/5 p-4 rounded-xl h-full flex flex-col justify-between transition-colors hover:bg-white/10 hover:border-white/10">
+                <IconUserPlus size={20} className="text-primary mb-3" />
+                <div>
+                  <h3 className="text-sm font-semibold">Join Now</h3>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider opacity-70 mt-1">Free Profile</p>
+                </div>
+              </div>
             </Link>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-muted-foreground/60 pt-8">
-          <p>High-performance scoring for 301 & 501 games</p>
+        {/* Footer/Features Preview */}
+        <div className="flex justify-center gap-6 pt-6 border-t border-white/5">
+          <div className="flex items-center gap-2 text-muted-foreground/40 text-[10px] font-bold uppercase tracking-wider">
+            <IconChartBar size={14} />
+            <span>Analytics</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground/40 text-[10px] font-bold uppercase tracking-wider">
+            <IconTarget size={14} />
+            <span>Heatmaps</span>
+          </div>
         </div>
       </div>
 
-      {/* Decorative Bottom Line */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
+      {/* Subtle Footer Signature */}
+      <div className="absolute bottom-6 text-[9px] font-bold tracking-widest text-muted-foreground/20 uppercase">
+        Designed for players
+      </div>
     </main>
   );
 }

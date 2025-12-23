@@ -67,17 +67,19 @@
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
 
-  /* Primary - Electric Cyan */
-  --primary: oklch(0.91 0.25 195); /* #00FFFF - Electric Cyan */
+  /* Primary - Softer Electric Cyan for text accessibility */
+  --primary: oklch(0.88 0.2 195); /* Slightly less saturated for eye comfort */
   --primary-foreground: oklch(0.141 0.005 285.823); /* Black text on cyan */
 
   /* Secondary - Dark Gray */
   --secondary: oklch(0.274 0.006 286.033); /* #262626 */
   --secondary-foreground: oklch(0.985 0 0);
 
-  /* Muted - Subtle Gray */
+  /* Muted - Subtle Gray (Improved contrast for WCAG AA) */
   --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067); /* Gray 400 */
+  --muted-foreground: oklch(
+    0.8 0.01 286
+  ); /* Lighter gray for better legibility */
 
   /* Accent - Cyan variant */
   --accent: oklch(0.91 0.25 195);
@@ -153,21 +155,48 @@
   }
 }
 
-/* Utility classes for NomadDarts theme */
 @layer utilities {
-  .text-cyan-glow {
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  /* Glassmorphism & Modern UI Effects */
+  .glass {
+    @apply bg-card/40 backdrop-blur-xl border border-white/10;
   }
 
-  .border-cyan-glow {
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  .glass-hover {
+    @apply hover:bg-card/60 hover:border-white/20 transition-all duration-300;
   }
 
-  .bg-charcoal {
-    background-color: #0d0d0d;
+  .glass-primary {
+    @apply bg-primary/10 backdrop-blur-xl border border-primary/20;
   }
 
-  .bg-charcoal-light {
-    background-color: #151515;
+  .cyan-glow {
+    filter: drop-shadow(0 0 8px oklch(0.91 0.25 195 / 0.4));
+  }
+
+  .cyan-glow-text {
+    text-shadow: 0 0 12px oklch(0.91 0.25 195 / 0.5);
+  }
+
+  /* Animations */
+  @keyframes radar {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      opacity: 0.3;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  .animate-radar {
+    animation: radar 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .delay-2000 {
+    animation-delay: 2s;
   }
 }

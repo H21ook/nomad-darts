@@ -48,6 +48,7 @@ export function AppBar({
                     <button
                         onClick={handleBack}
                         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors -ml-2 p-2"
+                        aria-label="Go back"
                     >
                         <IconArrowLeft size={24} />
                     </button>
