@@ -155,7 +155,7 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                         handleClearOrUndo();
                     }}
                     disabled={!canUndo}
-                    className='bg-red-500/20 text-red-500'
+                    className='bg-red-500/20 text-red-500 hover:bg-red-500/40'
                 >
                     <IconRotateClockwise2 size={24} />
                     <span className="text-[10px] font-black ml-0.5 mt-1 uppercase tracking-wider">

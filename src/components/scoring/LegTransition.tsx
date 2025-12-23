@@ -98,68 +98,49 @@ export function LegTransition({ winner }: LegTransitionProps) {
 
                 {/* 1. Trophy & Winner Name Animation */}
                 <div className="text-center mb-8">
-                    <motion.div
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: "spring", damping: 12, delay: 0.1 }}
-                        className="w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                        style={{ backgroundColor: `${winner.color}20`, border: `2px solid ${winner.color}` }}
-                    >
-                        <IconTrophy size={40} color={winner.color} />
-                    </motion.div>
+                    <div className="relative">
+                        <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", damping: 12, delay: 0.1 }}
+                            className="w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                            style={{ backgroundColor: `${winner.color}20`, border: `2px solid ${winner.color}` }}
+                        >
+                            {winner.image ? (
+                                <img src={winner.image} alt={winner.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <IconTrophy size={36} color={winner.color} />
+                            )}
+                        </motion.div>
 
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1"
-                    >
-                        Leg Winner
-                    </motion.p>
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                            >
+                                <div className="px-2 py-0.5 rounded-full shadow-lg border border-white/10 flex items-center justify-center" style={{ backgroundColor: winner.color }}>
+                                    <span className="text-[10px] font-black text-black uppercase tracking-widest">Leg Winner</span>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </div>
 
                     <motion.h1
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.4, type: "spring" }}
-                        className="text-5xl font-black italic truncate px-4"
-                        style={{ color: winner.color }}
+                        className="text-2xl font-black italic truncate px-4"
                     >
                         {winner.name.toUpperCase()}
                     </motion.h1>
                 </div>
 
-                {/* 2. Winner's Leg Performance (Stats Card) */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="bg-zinc-900/80 border border-white/5 rounded-3xl p-5 mb-8 shadow-2xl"
-                >
-                    <p className="text-[10px] text-zinc-600 font-bold uppercase mb-4 text-center tracking-widest">Leg Performance</p>
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="flex flex-col items-center border-r border-white/5">
-                            <IconBolt size={18} className="text-zinc-500 mb-1" />
-                            <p className="text-xl font-black text-white">{legAverage}</p>
-                            <p className="text-[8px] text-zinc-600 font-bold uppercase">Avg</p>
-                        </div>
-                        <div className="flex flex-col items-center border-r border-white/5">
-                            <IconTarget size={18} className="text-zinc-500 mb-1" />
-                            <p className="text-xl font-black text-white">{totalDarts}</p>
-                            <p className="text-[8px] text-zinc-600 font-bold uppercase">Darts</p>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-[10px] font-black text-white bg-white/10 px-1.5 py-0.5 rounded">100+</span>
-                            <p className="text-xl font-black text-white mt-1">{highScores}</p>
-                            <p className="text-[8px] text-zinc-600 font-bold uppercase">Highs</p>
-                        </div>
-                    </div>
-                </motion.div>
-
                 {/* 3. Global Match Score (Legs & Sets Progression) */}
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.1 }}
+                    transition={{ delay: 0.4 }}
                 >
                     <div className="flex items-center justify-between px-2 mb-12">
                         {players.map((player) => {
@@ -223,6 +204,35 @@ export function LegTransition({ winner }: LegTransitionProps) {
                         </div>
                     </div>
                 </motion.div>
+
+                {/* 2. Winner's Leg Performance (Stats Card) */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1 }}
+                    className="bg-zinc-900/80 border border-white/5 rounded-3xl p-5 mb-8 shadow-2xl"
+                >
+                    <p className="text-[10px] text-zinc-600 font-bold uppercase mb-4 text-center tracking-widest">Leg Performance</p>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="flex flex-col items-center border-r border-white/5">
+                            <IconBolt size={18} className="text-zinc-500 mb-1" />
+                            <p className="text-xl font-black text-white">{legAverage}</p>
+                            <p className="text-[8px] text-zinc-600 font-bold uppercase">Avg</p>
+                        </div>
+                        <div className="flex flex-col items-center border-r border-white/5">
+                            <IconTarget size={18} className="text-zinc-500 mb-1" />
+                            <p className="text-xl font-black text-white">{totalDarts}</p>
+                            <p className="text-[8px] text-zinc-600 font-bold uppercase">Darts</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-[10px] font-black text-white bg-white/10 px-1.5 py-0.5 rounded">100+</span>
+                            <p className="text-xl font-black text-white mt-1">{highScores}</p>
+                            <p className="text-[8px] text-zinc-600 font-bold uppercase">Highs</p>
+                        </div>
+                    </div>
+                </motion.div>
+
+
 
                 {/* 4. Actions */}
                 <motion.div

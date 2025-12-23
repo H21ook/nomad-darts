@@ -15,6 +15,7 @@ export interface Player extends PlayerInit {
   checkoutAttempts: number; // Double руу шидсэн оролдлого
   lastThrows: number[];
   color: string;
+  image?: string;
 }
 
 export interface MatchSettings {
@@ -101,6 +102,7 @@ export interface Active {
 }
 
 export interface MatchState {
+  id: string;
   settings: MatchSettings;
 
   // Одоо тоглож буй төлөв

@@ -13,6 +13,7 @@ import { getRandomPlayerColor } from "../utils";
 import { RootState } from "./store";
 
 const initialState: MatchState = {
+  id: nanoid(),
   settings: {
     startingScore: 501,
     firstToLegs: 3,
@@ -174,6 +175,7 @@ const matchSlice = createSlice({
       });
 
       // 3. Идэвхтэй төлөвийг (Active State) бэлдэх
+      state.id = nanoid();
       state.status = "playing";
       state.winnerId = null;
       state.lastLegWinnerId = null;
