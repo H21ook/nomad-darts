@@ -1,16 +1,16 @@
-import { createSlice, current, PayloadAction } from "@reduxjs/toolkit";
-import {
-  MatchState,
-  MatchSettings,
-  MatchSnapshot,
-  PlayerInit,
-  LegType,
-  SetType,
-  Turn,
-} from "../../types/darts";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { MatchState, MatchSettings, PlayerInit, Turn } from "../../types/darts";
 import { nanoid } from "nanoid";
 import { getRandomPlayerColor } from "../utils";
 import { RootState } from "./store";
+import {
+  createEmptyLeg,
+  createEmptySet,
+  handleLegWin,
+  nextPlayer,
+  resetScores,
+  takeSnapshotState,
+} from "./utils";
 
 const initialState: MatchState = {
   id: nanoid(),
@@ -59,88 +59,6 @@ const initialState: MatchState = {
   snapshots: [],
 };
 
-const createEmptyLeg = (
-  startingScore: number,
-  startPlayerIndex: number
-): LegType => ({
-  id: nanoid(),
-  winnerId: null,
-  turns: [],
-  dartsToFinish: 0,
-  startScore: startingScore,
-  startTime: Date.now(),
-  startPlayerIndex,
-});
-
-const createEmptySet = (): SetType => ({
-  id: nanoid(),
-  winnerId: null,
-  legs: [],
-});
-
-const takeSnapshotState = (state: MatchState) => {
-  // const snapshot: MatchSnapshot = {
-  //   players: JSON.parse(JSON.stringify(state.players)),
-  //   active: JSON.parse(JSON.stringify(state.active)),
-  //   history: JSON.parse(JSON.stringify(state.history)),
-  //   status: state.status,
-  //   lastLegWinnerId: state.lastLegWinnerId,
-  // };
-
-  const snapshot: MatchSnapshot = {
-    players: current(state.players),
-    active: current(state.active),
-    history: {
-      completedSets: current(state.history.completedSets),
-    },
-    status: state.status,
-    lastLegWinnerId: state.lastLegWinnerId,
-  };
-
-  state.snapshots.push(snapshot);
-
-  // Санах ойг хамгаалах үүднээс сүүлийн 20 үйлдлийг л хадгалж болно
-  if (state.snapshots.length > 20) {
-    state.snapshots.shift();
-  }
-};
-
-const handleLegWin = (state: MatchState) => {
-  if (state.active === null) return;
-  const activePlayerIndex = state.active.playerIndex;
-  const activePlayer = state.players[activePlayerIndex];
-
-  // Leg-ийг одоогийн Set- рүү нэмэх
-  state.active.currentLeg.winnerId = activePlayer.id;
-  state.active.currentSet.legs.push({ ...state.active.currentLeg });
-  // state.active.currentLeg.endTime = Date.now();
-
-  activePlayer.legsWon += 1;
-  state.lastLegWinnerId = activePlayer.id;
-  state.status = "leg_finished";
-
-  if (activePlayer.legsWon >= state.settings.firstToLegs) {
-    activePlayer.setsWon += 1;
-    state.active.currentSet.winnerId = activePlayer.id;
-    state.history.completedSets.push({ ...state.active.currentSet });
-
-    // Match дууссан эсэхийг шалгах
-    if (activePlayer.setsWon >= state.settings.firstToSets) {
-      state.status = "finished";
-      state.winnerId = activePlayer.id;
-    } else {
-      // Дараагийн сет эхлэх бэлтгэл
-      // state.players.forEach((p) => (p.legsWon = 0));
-      // state.active.currentSet = { id: nanoid(), legs: [], winnerId: null };
-    }
-  }
-};
-
-const nextPlayer = (state: MatchState) => {
-  const activePlayerIndex = state.active?.playerIndex ?? 0;
-  return (activePlayerIndex + 1) % state.players.length;
-};
-
 const matchSlice = createSlice({
   name: "match",
   initialState,
@@ -156,15 +74,15 @@ const matchSlice = createSlice({
       state.settings = settings;
 
       // 2. Тоглогчдыг шинээр үүсгэх (Stats reset)
-      state.players = players.map(({ id, name }, index) => {
-        const color = getRandomPlayerColor(usedColors);
-        usedColors.push(color);
+      state.players = players.map(({ id, name, color }, index) => {
+        const pColor = color || getRandomPlayerColor(usedColors);
+        usedColors.push(pColor);
         return {
           id,
           name: name?.trim() || `Player ${index + 1}`,
           score: settings.startingScore,
           order: index + 1,
-          color,
+          color: pColor,
           legsWon: 0,
           setsWon: 0,
           totalDartsThrown: 0,
@@ -260,11 +178,8 @@ const matchSlice = createSlice({
         state.lastLegWinnerId = lastSnapshot.lastLegWinnerId;
       }
     },
-    nextLeg: (state) => {
+    startNextLeg: (state) => {
       if (state.active === null) return;
-      if (state.status === "playing") return;
-
-      // Зөвхөн leg дууссан үед л ажиллана
       if (state.status !== "leg_finished") return;
 
       takeSnapshotState(state);
@@ -297,7 +212,7 @@ const matchSlice = createSlice({
       }
 
       // Оноо болон статус шинэчлэх
-      state.players.forEach((p) => (p.score = state.settings.startingScore));
+      resetScores(state);
       state.status = "playing";
       state.lastLegWinnerId = null;
 
@@ -309,10 +224,67 @@ const matchSlice = createSlice({
 
       state.active.playerIndex = nextStartPlayerIndex;
     },
+    rematch: (state) => {
+      state.id = nanoid();
+
+      const settings = state.settings;
+      const usedColors: string[] = [];
+
+      state.players = state.players.map((p, index) => {
+        const color = p.color || getRandomPlayerColor(usedColors);
+        usedColors.push(color);
+
+        return {
+          ...p,
+          score: settings.startingScore,
+          order: index + 1,
+          legsWon: 0,
+          setsWon: 0,
+          totalDartsThrown: 0,
+          totalPointsScored: 0,
+          checkoutAttempts: 0,
+          lastThrows: [],
+        };
+      });
+
+      // 3. Status reset
+      state.status = "playing";
+      state.winnerId = null;
+      state.lastLegWinnerId = null;
+
+      // 4. Эхлэх тоглогч
+      const previousWinnerIndex = state.players.findIndex(
+        (p) => p.id === state.winnerId
+      );
+
+      const startPlayerIndex =
+        previousWinnerIndex >= 0
+          ? (previousWinnerIndex + 1) % state.players.length
+          : 0;
+
+      // 5. Шинэ Leg + Set
+      const firstLeg = createEmptyLeg(settings.startingScore, startPlayerIndex);
+
+      const firstSet = createEmptySet();
+
+      state.active = {
+        playerIndex: startPlayerIndex,
+        currentLeg: firstLeg,
+        currentSet: firstSet,
+      };
+
+      // 6. History + snapshots цэвэрлэх
+      state.history = {
+        completedSets: [],
+      };
+
+      state.snapshots = [];
+    },
   },
 });
 
-export const { startMatch, submitTurn, undo, nextLeg } = matchSlice.actions;
+export const { startMatch, submitTurn, undo, startNextLeg, rematch } =
+  matchSlice.actions;
 export const selectCanUndo = (state: RootState) =>
   state.match.snapshots.length > 0;
 export default matchSlice.reducer;

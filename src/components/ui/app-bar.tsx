@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 export interface AppBarProps extends React.HTMLAttributes<HTMLDivElement> {
     title: string
     onBack?: () => void
+    backButtonIcon?: React.ReactNode
     backHref?: string
     actions?: React.ReactNode
     description?: string
@@ -16,6 +17,7 @@ export interface AppBarProps extends React.HTMLAttributes<HTMLDivElement> {
 export function AppBar({
     title,
     onBack,
+    backButtonIcon,
     backHref,
     actions,
     className,
@@ -47,21 +49,21 @@ export function AppBar({
                 {(onBack || backHref !== undefined) && (
                     <button
                         onClick={handleBack}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors -ml-2 p-2"
+                        className="w-14 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors p-2"
                         aria-label="Go back"
                     >
-                        <IconArrowLeft size={24} />
+                        {backButtonIcon || <IconArrowLeft size={24} />}
                     </button>
                 )}
 
                 {/* Title */}
-                <div>
+                <div className="flex-1 flex flex-col items-center">
                     <h1 className="text-lg font-bold flex-1 text-center">{title}</h1>
                     {description && <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{description}</p>}
                 </div>
 
                 {/* Actions or Spacer */}
-                <div className="w-10 flex items-center justify-end">
+                <div className="w-14 flex items-center justify-end">
                     {actions}
                 </div>
             </div>

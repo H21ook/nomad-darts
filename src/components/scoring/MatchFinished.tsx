@@ -1,14 +1,16 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { startMatch, undo } from "@/lib/redux/matchSlice"; // Rematch хийхэд ашиглана
+import { rematch, undo } from "@/lib/redux/matchSlice"; // Rematch хийхэд ашиглана
 import { Player } from "@/types/darts";
-import { IconBolt, IconTarget, IconTrophy, IconRefresh, IconX, IconCrown, IconRotateClockwise2, IconChartBar } from "@tabler/icons-react";
+import { IconTrophy, IconCrown, IconChartBar, IconArrowBarToLeftDashed } from "@tabler/icons-react";
 import { motion, Transition } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import confetti from "canvas-confetti";
-import { cn } from "@/lib/utils";
 import { AppBar } from "../ui/app-bar";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface MatchFinishedProps {
     winner: Player;
@@ -18,37 +20,62 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
     const dispatch = useAppDispatch();
     const match = useAppSelector(state => state.match);
     const players = match.players;
+    const router = useRouter();
 
     // Статистик тооцоолох функц
     const getAvg = (p: Player) => (p.totalPointsScored / (p.totalDartsThrown / 3 || 1)).toFixed(1);
 
     // Undo үйлдэл
     const handleUndoMatch = () => dispatch(undo());
-    // const handleRematch = () => dispatch(startMatch());
+    const handleRematch = () => dispatch(rematch());
 
     useEffect(() => {
-        // Ялагчийн өнгөөр confetti буудуулах
         const duration = 3 * 1000;
         const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+        const defaults = {
+            startVelocity: 30,
+            spread: 360,
+            ticks: 60,
+            zIndex: 300, // ✅ FIX
+        };
+
+        const randomInRange = (min: number, max: number) =>
+            Math.random() * (max - min) + min;
 
         const interval = setInterval(() => {
+            if (document.hidden) return;
+            if (window.matchMedia('(prefers-reduced-motion)').matches) return;
+
             const timeLeft = animationEnd - Date.now();
-            if (timeLeft <= 0) return clearInterval(interval);
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                return;
+            }
 
             const particleCount = 50 * (timeLeft / duration);
-            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: [winner.color] });
-            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: [winner.color] });
-        }, 250);
+
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+                colors: [winner.color],
+            });
+
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+                colors: [winner.color],
+            });
+        }, 300);
 
         return () => clearInterval(interval);
     }, [winner.color]);
 
-    const handleRematch = () => {
-        // Redux дээр match reset хийх логик
-        // dispatch(startMatch());
+
+    const backToMenu = () => {
+        router.push('/');
     };
 
     const fadeInUp = {
@@ -62,12 +89,13 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col pb-safe overflow-hidden"
+            className="fixed inset-0 z-200 bg-zinc-950 flex flex-col pb-safe overflow-hidden"
         >
             {/* 1. AppBar: Undo холбогдсон */}
             <AppBar
                 title="Match Result"
-                onBack={handleUndoMatch}
+                onBack={backToMenu}
+                backButtonIcon={<IconArrowBarToLeftDashed size={24} />}
                 description={`ID: #${match?.id?.slice(0, 6) || 'B829-X'} • 24 OCT 2023`}
             />
 
@@ -85,7 +113,7 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
                             <div className="w-24 h-24 rounded-full border-[3px] p-1 flex items-center justify-center bg-zinc-950 shadow-2xl" style={{ borderColor: winner.color }}>
                                 <div className="w-full h-full rounded-full overflow-hidden bg-zinc-900 flex items-center justify-center">
                                     {winner.image ? (
-                                        <img src={winner.image} alt={winner.name} className="w-full h-full object-cover" />
+                                        <Image src={winner.image} alt={winner.name} height={40} width={40} className="size-10 object-cover" />
                                     ) : (
                                         <IconCrown size={40} style={{ color: winner.color }} />
                                     )}
@@ -144,11 +172,15 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
                     transition={{ ...fadeInUp.transition, delay: 0.8 }}
                     className="space-y-2 mt-2"
                 >
-                    <button className="w-full py-4 rounded-xl font-black text-lg transition-all active:scale-95 bg-cyan-500 text-black shadow-2xl">
+                    <button onClick={handleRematch}
+                        className="w-full py-4 rounded-xl font-black text-lg transition-all active:scale-95 bg-cyan-500 text-black shadow-2xl">
                         PLAY REMATCH
                     </button>
-                    <button className="w-full py-2 text-zinc-600 font-black text-[10px] uppercase tracking-[0.3em] active:text-white">
-                        Back to Menu
+                    <button onClick={() => {
+                        handleUndoMatch();
+                    }}
+                        className="w-full py-2 text-zinc-600 font-black text-[10px] uppercase tracking-[0.3em] active:text-white">
+                        Undo last turn
                     </button>
                 </motion.div>
             </div>
@@ -157,7 +189,7 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
 }
 
 // Статистик харьцуулах жижиг мөр
-function StatBox({ label, value, isPositive, color }: {
+function StatBox({ label, value, isPositive }: {
     label: string;
     value: string;
     isPositive?: boolean;

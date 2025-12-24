@@ -1,3 +1,6 @@
+"use client";
+import { motion } from 'framer-motion';
+
 interface Props {
     onConfirm: (num: number) => void;
     onCancel: () => void;
@@ -5,7 +8,12 @@ interface Props {
 
 export function FinishConfirmation({ onConfirm, onCancel }: Props) {
     return (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md">
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md">
             <div className="bg-zinc-900 p-8 rounded-3xl border border-white/10 w-[90%] max-w-sm text-center">
                 <h2 className="text-2xl font-black text-white mb-6">CHECKOUT!</h2>
                 <p className="text-zinc-400 text-sm mb-8">How many darts did you use to finish?</p>
@@ -26,9 +34,9 @@ export function FinishConfirmation({ onConfirm, onCancel }: Props) {
                     onClick={onCancel}
                     className="text-zinc-500 font-bold text-sm uppercase tracking-widest hover:text-white"
                 >
-                    Cancel (Mistake)
+                    Cancel
                 </button>
             </div>
-        </div>
+        </motion.div>
     );
 }

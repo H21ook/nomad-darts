@@ -1,10 +1,11 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { nextLeg, undo } from "@/lib/redux/matchSlice";
+import { startNextLeg, undo } from "@/lib/redux/matchSlice";
 import { Player } from "@/types/darts";
 import { IconBolt, IconTarget, IconTrophy } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface LegTransitionProps {
@@ -21,7 +22,7 @@ export function LegTransition({ winner }: LegTransitionProps) {
     const active = match.active!;
     const players = match.players;
     const currentLeg = active.currentLeg;
-    const onNextLeg = () => dispatch(nextLeg());
+    const onNextLeg = () => dispatch(startNextLeg());
     const onUndo = () => dispatch(undo());
 
     const isSetWon = winner.legsWon >= settings.firstToLegs;
@@ -74,15 +75,11 @@ export function LegTransition({ winner }: LegTransitionProps) {
         }, 2000);
 
         return () => clearTimeout(timer1);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [winner.id]);
+    }, [winner.id, winner.legsWon, winner.setsWon, isSetWon]);
 
     const lastLegTurns = currentLeg.turns.filter(t => t.playerId === winner.id);
     const totalDarts = lastLegTurns.reduce((acc, t) => acc + (t.dartsUsed || 3), 0);
     const pointsInLeg = lastLegTurns.reduce((acc, t) => acc + t.points, 0);
-
-    console.log("leg point ", pointsInLeg);
-    console.log("leg darts ", totalDarts);
 
     // Дундаж бодох (3 суманд шилжүүлсэн)
     const legAverage = totalDarts > 0 ? ((pointsInLeg / totalDarts) * 3).toFixed(1) : "0.0";
@@ -107,7 +104,7 @@ export function LegTransition({ winner }: LegTransitionProps) {
                             style={{ backgroundColor: `${winner.color}20`, border: `2px solid ${winner.color}` }}
                         >
                             {winner.image ? (
-                                <img src={winner.image} alt={winner.name} className="w-full h-full object-cover" />
+                                <Image src={winner.image} alt={winner.name} height={36} width={36} className="size-9 object-cover" />
                             ) : (
                                 <IconTrophy size={36} color={winner.color} />
                             )}
@@ -257,10 +254,9 @@ export function LegTransition({ winner }: LegTransitionProps) {
                         />
                     </button>
                     <button onClick={() => {
-                        console.trace("overview undo was called!");
                         onUndo();
                     }} className="w-full py-2 text-zinc-700 hover:text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] transition-colors">
-                        Undo Mistake
+                        Undo last turn
                     </button>
                 </motion.div>
             </div>

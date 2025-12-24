@@ -3,6 +3,7 @@ export type CheckoutType = "double" | "straight";
 export interface PlayerInit {
   id: string;
   name: string;
+  color?: string;
   isError?: boolean;
 }
 export interface Player extends PlayerInit {
@@ -97,6 +98,7 @@ export interface MatchSnapshot {
 
 export interface Active {
   playerIndex: number;
+  currentTurn?: Turn;
   currentLeg: LegType;
   currentSet: SetType;
 }

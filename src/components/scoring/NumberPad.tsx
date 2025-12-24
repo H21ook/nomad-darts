@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { checkFinishablePoint, cn } from '@/lib/utils';
 import { IconBackspace, IconCheck, IconTargetArrow, IconX, IconTrophy, IconRotateClockwise2 } from '@tabler/icons-react';
 import FastButton from './FastButton';
@@ -21,19 +21,19 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
 
     const canFinish = checkFinishablePoint(currentScore);
 
-    const handlePress = (num: number) => {
+    const handlePress = useCallback((num: number) => {
         setDisplayMode('number');
         setValue(prev => {
             if (prev.length >= 3 || displayMode === 'text') return num.toString();
             const next = prev + num.toString();
             return parseInt(next) > 180 ? prev : next;
         });
-        navigator.vibrate?.(5);
-    };
+        if (navigator.vibrate) navigator.vibrate(5);
+    }, [displayMode]);
 
     const handleClear = () => {
         setValue('');
-        if (typeof navigator !== 'undefined') navigator.vibrate?.(15);
+        if (navigator.vibrate) navigator.vibrate(15);
     };
 
     const handleStrategyClick = (type: 'BUST' | 'BULL' | 'FINISH') => {
@@ -41,7 +41,7 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
         if (type === 'BUST') setValue('BUST');
         if (type === 'BULL') setValue('50');
         if (type === 'FINISH') setValue(currentScore.toString());
-        navigator.vibrate?.(10);
+        if (navigator.vibrate) navigator.vibrate(10);
     };
 
     const handleClearOrUndo = () => {
@@ -49,7 +49,7 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
             console.trace("undo was called!");
             onUndo?.();
         }
-        navigator.vibrate?.(15);
+        if (navigator.vibrate) navigator.vibrate(15);
     };
 
     const handleSubmit = () => {
