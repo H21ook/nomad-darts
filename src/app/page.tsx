@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <main className="h-dvh bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Subtle Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
 
       <div className="w-full max-w-sm space-y-10 relative z-10">
         {/* Logo & Branding */}

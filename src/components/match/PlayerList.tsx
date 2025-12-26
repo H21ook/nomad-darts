@@ -4,7 +4,7 @@ import { useDragControls } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { IconGripVertical, IconPlus, IconTrash, IconUser } from '@tabler/icons-react';
 import { Reorder } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, PLAYER_COLORS } from '@/lib/utils';
 import { PlayerInit } from '@/types/darts';
 import { nanoid } from 'nanoid';
 
@@ -21,7 +21,12 @@ const PlayerList = ({
     };
 
     const handleAddPlayer = () => {
-        setPlayersList((prev: PlayerInit[]) => [...prev, { id: nanoid(), name: `Player ${prev.length + 1}` }]);
+        setPlayersList(prev => [
+            ...prev,
+            {
+                id: nanoid(),
+            },
+        ]);
     };
 
     const handlePlayerNameChange = (index: number, name: string) => {
@@ -37,7 +42,7 @@ const PlayerList = ({
     };
 
     return (
-        <div>
+        <div className="flex-1">
             <div className="flex items-center gap-2 justify-between">
                 <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                     Players
@@ -49,16 +54,19 @@ const PlayerList = ({
 
             <Reorder.Group axis="y" values={playersList} onReorder={handleReorder} className="flex flex-col gap-2 mt-2">
                 {
-                    playersList.map((player, index) => (
-                        <PlayerItem
-                            key={player.id}
-                            player={player}
-                            index={index}
-                            handlePlayerNameChange={handlePlayerNameChange}
-                            handleRemovePlayer={handleRemovePlayer}
-                            playersCount={playersList.length}
-                        />
-                    ))
+                    playersList.map((player, index) => {
+                        player.color = PLAYER_COLORS[index % PLAYER_COLORS.length];
+                        return (
+                            <PlayerItem
+                                key={player.id}
+                                player={player}
+                                index={index}
+                                handlePlayerNameChange={handlePlayerNameChange}
+                                handleRemovePlayer={handleRemovePlayer}
+                                playersCount={playersList.length}
+                            />
+                        )
+                    })
                 }
             </Reorder.Group>
 
@@ -81,23 +89,22 @@ const PlayerItem = ({
     handleRemovePlayer: (index: number) => void;
     playersCount: number;
 }) => {
-
     const controls = useDragControls();
 
     return <Reorder.Item
         value={player}
         dragListener={false}
         dragControls={controls}
-        animate={player.isError ? {
-            x: [-1, 2, -2, 2, -2, 0],
-            transition: { duration: 0.4 }
-        } : { x: 0 }}
         className="relative cursor-grab active:cursor-grabbing"
     >
-        <div className={cn("group w-full overflow-hidden rounded-xl border-2 bg-card/40 backdrop-blur-md transition-all duration-200 focus-within:shadow-lg", player.isError ? "border-destructive/60 focus-within:border-destructive" : "border-primary/20 focus-within:border-primary")}>
+        <div
+            className={cn("group w-full overflow-hidden rounded-xl border-2 bg-card/40 backdrop-blur-md transition-all duration-200 focus-within:shadow-lg",
+                "border-primary/20 focus-within:border-primary"
+            )}>
             <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-3 pointer-events-none z-10">
-                <div className="size-9 rounded-full bg-primary/20 flex items-center justify-center">
-                    <IconUser size={20} className="text-primary" />
+                <div className="size-9 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: player.color + "33" }}>
+                    <IconUser size={20} style={{ color: player.color }} />
                 </div>
             </div>
             <input

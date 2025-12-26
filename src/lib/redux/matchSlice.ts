@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { MatchState, MatchSettings, PlayerInit, Turn } from "../../types/darts";
 import { nanoid } from "nanoid";
-import { getRandomPlayerColor } from "../utils";
+import { getRandomPlayerColor, PLAYER_COLORS } from "../utils";
 import { RootState } from "./store";
 import {
   createEmptyLeg,
@@ -20,6 +20,7 @@ const initialState: MatchState = {
     firstToSets: 1,
     setsEnabled: false, // Only legs by default
     checkout: "double",
+    randomOrder: true,
   },
   players: [
     {
@@ -68,15 +69,19 @@ const matchSlice = createSlice({
       action: PayloadAction<MatchSettings & { players: PlayerInit[] }>
     ) => {
       const { players, ...settings } = action.payload;
-      const usedColors: string[] = [];
+      let orderedPlayers = players;
 
       // 1. Тохиргоог хадгалах
       state.settings = settings;
 
-      // 2. Тоглогчдыг шинээр үүсгэх (Stats reset)
-      state.players = players.map(({ id, name, color }, index) => {
-        const pColor = color || getRandomPlayerColor(usedColors);
-        usedColors.push(pColor);
+      // 2. Тоглогчдын дарааллыг холих
+      if (settings.randomOrder) {
+        orderedPlayers = players.sort(() => Math.random() - 0.5);
+      }
+
+      // 3. Тоглогчдыг шинээр үүсгэх (Stats reset)
+      state.players = orderedPlayers.map(({ id, name, color }, index) => {
+        const pColor = color || PLAYER_COLORS[index];
         return {
           id,
           name: name?.trim() || `Player ${index + 1}`,
@@ -92,13 +97,13 @@ const matchSlice = createSlice({
         };
       });
 
-      // 3. Идэвхтэй төлөвийг (Active State) бэлдэх
+      // 4. Идэвхтэй төлөвийг (Active State) бэлдэх
       state.id = nanoid();
       state.status = "playing";
       state.winnerId = null;
       state.lastLegWinnerId = null;
 
-      // 4. Шатласан бүтцийг эхлүүлэх (ШИНЭ ХЭСЭГ)
+      // 5. Шатласан бүтцийг эхлүүлэх (ШИНЭ ХЭСЭГ)
 
       const startPlayerIndex = 0;
       const firstLeg = createEmptyLeg(settings.startingScore, startPlayerIndex);
@@ -110,7 +115,7 @@ const matchSlice = createSlice({
         currentSet: firstSet,
       };
 
-      // 5. Түүхийг цэвэрлэх
+      // 6. Түүхийг цэвэрлэх
       state.history = {
         completedSets: [],
       };

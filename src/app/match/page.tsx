@@ -31,7 +31,7 @@ export default function MatchPage() {
     if (match.status === 'setup') return null;
 
     return (
-        <div className="flex flex-col h-dvh bg-[#0D0D0D] overflow-hidden">
+        <div className="flex flex-col h-dvh bg-background overflow-hidden">
             <div className="flex-1 flex flex-col justify-end pb-safe">
                 <ScoreBoard
                     players={match.players}

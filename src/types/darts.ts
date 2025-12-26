@@ -2,11 +2,12 @@ export type GameType = "X01" | "CRICKET" | "PRACTICE";
 export type CheckoutType = "double" | "straight";
 export interface PlayerInit {
   id: string;
-  name: string;
+  name?: string;
   color?: string;
-  isError?: boolean;
 }
-export interface Player extends PlayerInit {
+export interface Player {
+  id: string;
+  name: string;
   score: number;
   legsWon: number;
   setsWon: number;
@@ -25,6 +26,7 @@ export interface MatchSettings {
   firstToLegs: number;
   setsEnabled: boolean;
   checkout: CheckoutType;
+  randomOrder: boolean;
 }
 
 // 1. Хамгийн жижиг нэгж: Нэг шидэлт
