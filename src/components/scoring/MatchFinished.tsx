@@ -1,9 +1,9 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { rematch, undo } from "@/lib/redux/matchSlice"; // Rematch хийхэд ашиглана
 import { Player } from "@/types/darts";
-import { IconTrophy, IconCrown, IconChartBar, IconArrowBarToLeftDashed } from "@tabler/icons-react";
+import { IconTrophy, IconCrown, IconChartBar } from "@tabler/icons-react";
 import { motion, Transition } from "framer-motion";
 import { useEffect } from "react";
 import confetti from "canvas-confetti";
@@ -13,13 +13,13 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface MatchFinishedProps {
+    id: string;
     winner: Player;
+    players: Player[];
 }
 
-export function MatchFinished({ winner }: MatchFinishedProps) {
+export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) {
     const dispatch = useAppDispatch();
-    const match = useAppSelector(state => state.match);
-    const players = match.players;
     const router = useRouter();
 
     // Статистик тооцоолох функц
@@ -37,7 +37,7 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
             startVelocity: 30,
             spread: 360,
             ticks: 60,
-            zIndex: 300, // ✅ FIX
+            zIndex: 300,
         };
 
         const randomInRange = (min: number, max: number) =>
@@ -94,9 +94,8 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
             {/* 1. AppBar: Undo холбогдсон */}
             <AppBar
                 title="Match Result"
-                onBack={backToMenu}
-                backButtonIcon={<IconArrowBarToLeftDashed size={24} />}
-                description={`ID: #${match?.id?.slice(0, 6) || 'B829-X'} • 24 OCT 2023`}
+                backHref="/"
+                description={`ID: #${id?.slice(0, 6) || 'B829-X'} • 24 OCT 2023`}
             />
 
             <div className="flex-1 flex flex-col justify-between p-4 max-w-sm mx-auto w-full">
@@ -176,12 +175,12 @@ export function MatchFinished({ winner }: MatchFinishedProps) {
                         className="w-full py-4 rounded-xl font-black text-lg transition-all active:scale-95 bg-cyan-500 text-black shadow-2xl">
                         PLAY REMATCH
                     </button>
-                    <button onClick={() => {
+                    {/* <button onClick={() => {
                         handleUndoMatch();
                     }}
                         className="w-full py-2 text-zinc-600 font-black text-[10px] uppercase tracking-[0.3em] active:text-white">
                         Undo last turn
-                    </button>
+                    </button> */}
                 </motion.div>
             </div>
         </motion.div>

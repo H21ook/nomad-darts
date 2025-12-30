@@ -7,16 +7,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LegTransition } from '@/components/scoring/LegTransition';
-import { MatchFinished } from '@/components/scoring/MatchFinished';
 
 export default function MatchPage() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const match = useAppSelector(state => state.match);
-
-    const winner = match.winnerId
-        ? match.players.find(p => p.id === match.winnerId)
-        : null;
 
     const lastLegWinner = match.lastLegWinnerId
         ? match.players.find(p => p.id === match.lastLegWinnerId)
@@ -24,6 +19,12 @@ export default function MatchPage() {
 
     const currentPlayerIndex = match.active?.playerIndex ?? 0;
     const canUndo = useAppSelector(selectCanUndo);
+
+    useEffect(() => {
+        if (match.status === 'finished') {
+            router.replace('/match/finished');
+        }
+    }, [match.status, router]);
 
     useEffect(() => {
         if (match.status === 'setup') router.replace('/');
@@ -59,18 +60,6 @@ export default function MatchPage() {
                         className="absolute inset-0 z-50"
                     >
                         <LegTransition winner={lastLegWinner} />
-                    </motion.div>
-                )}
-
-                {match.status === 'finished' && winner && (
-                    <motion.div
-                        key="match-finished"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-50"
-                    >
-                        <MatchFinished winner={winner} />
                     </motion.div>
                 )}
             </AnimatePresence>
