@@ -50,7 +50,7 @@ export function LegTransition({ winner }: LegTransitionProps) {
         // 0.8s Delay - Leg оноо нэмэгдэх
         const timer1 = setTimeout(() => {
             setIsLegJumping(true);
-            setDisplayLegs(prev => ({ ...prev, [winner.id]: winner.legsWon }));
+            setDisplayLegs((prev) => ({ ...prev, [winner.id]: winner.legsWon }));
 
             if (isSetWon) {
                 // 1.8s Delay - Нисэх цэг
@@ -196,9 +196,9 @@ export function LegTransition({ winner }: LegTransitionProps) {
                         })}
 
                         {/* VS Divider */}
-                        <div className="px-4 flex flex-col items-center justify-center opacity-20">
+                        {/* <div className="px-4 flex flex-col items-center justify-center opacity-20">
                             <div className="h-12 w-px bg-linear-to-b from-transparent via-zinc-500 to-transparent" />
-                        </div>
+                        </div> */}
                     </div>
                 </motion.div>
 
