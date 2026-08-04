@@ -26,7 +26,6 @@ async function withRefresh<T, TBody>(
     token,
   });
 
-  console.log("Test")
   if (!res.isOk && res.status === 401 && !isRetry) {
     const newToken = await refreshAccessToken();
     if (!newToken) return handleAuthFailure(res);

@@ -240,7 +240,6 @@ export function LegTransition({ winner }: LegTransitionProps) {
                 >
                     <button
                         onClick={() => {
-                            console.trace("nextLeg was called!");
                             onNextLeg();
                         }}
                         className="w-full py-5 rounded-2xl font-black text-xl transition-all active:scale-95 shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex items-center justify-center gap-3 relative overflow-hidden group"

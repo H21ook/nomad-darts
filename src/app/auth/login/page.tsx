@@ -27,7 +27,6 @@ const LoginPage = () => {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    // transition={{ duration: 0.4 }}ß
                     className="w-full max-w-sm relative z-10"
                 >
                     <LoginForm />
