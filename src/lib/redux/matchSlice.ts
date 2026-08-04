@@ -161,6 +161,7 @@ const matchSlice = createSlice({
       // 2. Normal Hit
       activePlayer.score = remaining;
       activePlayer.totalDartsThrown += dartsUsed;
+      activePlayer.totalPointsScored += turn.points;
 
       // 3. Checkout Logic
       if (remaining === 0) {
@@ -234,6 +235,7 @@ const matchSlice = createSlice({
 
       const settings = state.settings;
       const usedColors: string[] = [];
+      const previousWinnerId = state.winnerId;
 
       state.players = state.players.map((p, index) => {
         const color = p.color || getRandomPlayerColor(usedColors);
@@ -259,7 +261,7 @@ const matchSlice = createSlice({
 
       // 4. Эхлэх тоглогч
       const previousWinnerIndex = state.players.findIndex(
-        (p) => p.id === state.winnerId
+        (p) => p.id === previousWinnerId
       );
 
       const startPlayerIndex =
