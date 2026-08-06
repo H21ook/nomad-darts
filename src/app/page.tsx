@@ -81,8 +81,10 @@ export default function Home() {
       </div>
 
       {/* Subtle Footer Signature */}
-      <div className="absolute bottom-6 text-[9px] font-bold tracking-widest text-muted-foreground/20 uppercase">
-        Designed for players
+      <div className="absolute bottom-6 flex items-center gap-3 text-[9px] font-bold tracking-widest text-muted-foreground/20 uppercase">
+        <span>Designed for players</span>
+        <span className="w-px h-3 bg-muted-foreground/15" />
+        <span>v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
       </div>
     </main>
   );

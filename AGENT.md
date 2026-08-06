@@ -87,3 +87,4 @@ pnpm build
 6. When changing game logic in `matchSlice.ts`, verify against the typecheck, lint, and build.
 7. UI copy is currently English with some Mongolian developer comments in `matchSlice.ts`/scoring components — keep comments consistent with their existing language where you edit them.
 8. `MatchFinished.tsx` and score sections assume exactly 2 players (`players[0]`, `players[1]`); `PlayerList` supports more. If you extend player count, update those assumptions.
+9. **Bump `version` in `package.json` before every push to `main`** — the app version shown in the footer reads `NEXT_PUBLIC_APP_VERSION`, which `next.config.ts` derives from `package.json` at build time. Bump as a separate `chore(release): bump version to x.y.z` commit.
