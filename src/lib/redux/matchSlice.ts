@@ -231,6 +231,11 @@ const matchSlice = createSlice({
 
       state.active.playerIndex = nextStartPlayerIndex;
     },
+    abandonMatch: (state) => {
+      state.status = "setup";
+      state.active = null;
+      state.snapshots = [];
+    },
     rematch: (state) => {
       state.id = nanoid();
       const settings = state.settings;
@@ -290,7 +295,7 @@ const matchSlice = createSlice({
   },
 });
 
-export const { startMatch, submitTurn, undo, startNextLeg, rematch } =
+export const { startMatch, submitTurn, undo, startNextLeg, rematch, abandonMatch } =
   matchSlice.actions;
 export const selectCanUndo = (state: RootState) =>
   state.match.snapshots.length > 0;
