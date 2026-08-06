@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // serwist-generated service worker bundle
+    "public/sw.js",
   ]),
 ]);
 
