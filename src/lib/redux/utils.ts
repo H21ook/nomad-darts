@@ -36,6 +36,7 @@ export const takeSnapshotState = (state: MatchState) => {
     },
     status: state.status,
     lastLegWinnerId: state.lastLegWinnerId,
+    winnerId: state.winnerId,
   };
 
   state.snapshots.push(snapshot);
@@ -51,7 +52,7 @@ const finishMatch = (state: MatchState) => {
   const activePlayerIndex = state.active.playerIndex;
   const activePlayer = state.players[activePlayerIndex];
 
-  state.status = "finished";
+  state.status = "match_finished"
   state.winnerId = activePlayer.id;
 };
 
@@ -62,7 +63,7 @@ const finishSet = (state: MatchState) => {
 
   activePlayer.setsWon += 1;
   state.active.currentSet.winnerId = activePlayer.id;
-  state.history.completedSets.push({ ...state.active.currentSet });
+  state.history.completedSets.push(deepClone(state.active.currentSet));
 
   // Match дууссан эсэхийг шалгах
   if (activePlayer.setsWon >= state.settings.firstToSets) {
@@ -77,13 +78,24 @@ export const handleLegWin = (state: MatchState) => {
 
   // Leg-ийг одоогийн Set- рүү нэмэх
   state.active.currentLeg.winnerId = activePlayer.id;
-  state.active.currentSet.legs.push({ ...state.active.currentLeg });
+  state.active.currentSet.legs.push(deepClone(state.active.currentLeg));
   // state.active.currentLeg.endTime = Date.now();
 
   activePlayer.legsWon += 1;
   state.lastLegWinnerId = activePlayer.id;
-  state.status = "leg_finished";
 
+  // ✅ Sets disabled бол: legs хүрмэгц match дуусгана
+  if (!state.settings.setsEnabled) {
+    if (activePlayer.legsWon >= state.settings.firstToLegs) {
+      finishMatch(state);
+      return;
+    }
+    state.status = "leg_finished";
+    return;
+  }
+
+  // ✅ Sets enabled бол: leg_finished → set logic
+  state.status = "leg_finished";
   if (activePlayer.legsWon >= state.settings.firstToLegs) {
     finishSet(state);
   }

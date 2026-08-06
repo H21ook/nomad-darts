@@ -39,7 +39,7 @@ export interface Throw {
 // 2. Ээлж: Тоглогчийн нэг удаа самбарт очих үе (3 сум)
 export interface Turn {
   playerId: string;
-  throws: Throw[]; // 3 хүртэлх сум
+  throws?: Throw[]; // 3 хүртэлх сум
   points: number; // Энэ ээлжинд авсан нийт оноо
   isBust: boolean;
   dartsUsed: number;
@@ -65,7 +65,7 @@ export interface SetType {
   legs: LegType[]; // Энэ сет-д багтсан бүх лег-үүд
 }
 
-export type MatchStatus = "setup" | "playing" | "finished" | "leg_finished";
+export type MatchStatus = "setup" | "playing" | "match_finished" | "leg_finished";
 export interface Match {
   id: string;
   settings: MatchSettings;
@@ -73,7 +73,7 @@ export interface Match {
   sets: SetType[];
   currentSetId: string;
   currentLegId: string;
-  status: "playing" | "finished";
+  status: MatchStatus;
   overallWinnerId: string | null;
 }
 
@@ -85,6 +85,7 @@ export interface MatchSnapshot {
   };
   status: MatchStatus;
   lastLegWinnerId: string | null;
+  winnerId: string | null;
 }
 
 // export interface MatchState {
@@ -100,7 +101,7 @@ export interface MatchSnapshot {
 
 export interface Active {
   playerIndex: number;
-  currentTurn?: Turn;
+  // currentTurn?: Turn;
   currentLeg: LegType;
   currentSet: SetType;
 }

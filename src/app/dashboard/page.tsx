@@ -85,7 +85,7 @@ export default function Dashboard() {
                                     {matches.map(m => (
                                         <li key={m.id} className="flex justify-between items-center p-3 rounded-lg bg-background/50 border border-border/30">
                                             <span className="font-medium">{m.settings.checkout}</span>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${m.status === 'finished'
+                                            <span className={`text-xs px-2 py-1 rounded-full ${m.status === 'match_finished'
                                                 ? 'bg-green-500/20 text-green-400'
                                                 : 'bg-yellow-500/20 text-yellow-400'
                                                 }`}>

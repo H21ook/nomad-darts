@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 const MatchFinishedPage = () => {
     const match = useAppSelector(state => state.match);
 
-    if (match.status !== "finished") {
+    if (match.status !== "match_finished") {
         redirect('/')
     }
 

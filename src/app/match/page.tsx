@@ -21,7 +21,7 @@ export default function MatchPage() {
     const canUndo = useAppSelector(selectCanUndo);
 
     useEffect(() => {
-        if (match.status === 'finished') {
+        if (match.status === 'match_finished') {
             router.replace('/match/finished');
         }
     }, [match.status, router]);

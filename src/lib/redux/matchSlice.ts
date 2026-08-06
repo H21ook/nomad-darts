@@ -76,7 +76,7 @@ const matchSlice = createSlice({
 
       // 2. Тоглогчдын дарааллыг холих
       if (settings.randomOrder) {
-        orderedPlayers = players.sort(() => Math.random() - 0.5);
+        orderedPlayers = [...players].sort(() => Math.random() - 0.5);
       }
 
       // 3. Тоглогчдыг шинээр үүсгэх (Stats reset)
@@ -181,6 +181,7 @@ const matchSlice = createSlice({
         state.history = lastSnapshot.history;
         state.status = lastSnapshot.status;
         state.lastLegWinnerId = lastSnapshot.lastLegWinnerId;
+        state.winnerId = lastSnapshot.winnerId;
       }
     },
     startNextLeg: (state) => {
@@ -231,7 +232,7 @@ const matchSlice = createSlice({
     },
     rematch: (state) => {
       state.id = nanoid();
-
+      const prevWinnerId = state.winnerId;
       const settings = state.settings;
       const usedColors: string[] = [];
 
@@ -252,15 +253,13 @@ const matchSlice = createSlice({
         };
       });
 
-      // 3. Status reset
+      // 3. Эхлэх тоглогч
+      const previousWinnerIndex = state.players.findIndex(p => p.id === prevWinnerId);
+
+      // 4. Status reset
       state.status = "playing";
       state.winnerId = null;
       state.lastLegWinnerId = null;
-
-      // 4. Эхлэх тоглогч
-      const previousWinnerIndex = state.players.findIndex(
-        (p) => p.id === state.winnerId
-      );
 
       const startPlayerIndex =
         previousWinnerIndex >= 0
