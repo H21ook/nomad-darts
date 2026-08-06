@@ -17,7 +17,10 @@ export async function POST(req: Request) {
   //     headers: { "Content-Type": "application/json" },
   //   });
 
-  if (email === "khishigbayar.u@gmail.com" && password === "Test@123") {
+  const demoEmail = process.env.DEMO_EMAIL;
+  const demoPassword = process.env.DEMO_PASSWORD;
+
+  if (demoEmail && demoPassword && email === demoEmail && password === demoPassword) {
     res = {
       accessToken: `access_token_${Date.now()}`,
       refreshToken: "refresh_token",

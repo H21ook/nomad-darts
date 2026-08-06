@@ -46,7 +46,6 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
 
     const handleClearOrUndo = () => {
         if (canUndo) {
-            console.trace("undo was called!");
             onUndo?.();
         }
         if (navigator.vibrate) navigator.vibrate(15);

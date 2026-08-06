@@ -1,15 +1,14 @@
 "use client";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { rematch, undo } from "@/lib/redux/matchSlice"; // Rematch хийхэд ашиглана
+import { rematch } from "@/lib/redux/matchSlice"; // Rematch хийхэд ашиглана
 import { Player } from "@/types/darts";
 import { IconTrophy, IconCrown, IconChartBar } from "@tabler/icons-react";
 import { motion, Transition } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, Fragment } from "react";
 import confetti from "canvas-confetti";
 import { AppBar } from "../ui/app-bar";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface MatchFinishedProps {
@@ -20,13 +19,11 @@ interface MatchFinishedProps {
 
 export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) {
     const dispatch = useAppDispatch();
-    const router = useRouter();
 
     // Статистик тооцоолох функц
     const getAvg = (p: Player) => (p.totalPointsScored / (p.totalDartsThrown / 3 || 1)).toFixed(1);
 
-    // Undo үйлдэл
-    const handleUndoMatch = () => dispatch(undo());
+    // Rematch үйлдэл
     const handleRematch = () => dispatch(rematch());
 
     useEffect(() => {
@@ -72,11 +69,6 @@ export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) 
 
         return () => clearInterval(interval);
     }, [winner.color]);
-
-
-    const backToMenu = () => {
-        router.push('/');
-    };
 
     const fadeInUp = {
         initial: { opacity: 0, y: 15 },
@@ -138,12 +130,17 @@ export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) 
                     className="flex flex-col items-center"
                 >
                     <div className="flex items-center gap-8">
-                        <span className="text-6xl font-black italic text-white leading-none">{players[0].setsWon}</span>
-                        <div className="flex flex-col items-center gap-1 opacity-20">
-                            <span className="text-xs font-black italic tracking-widest">VS</span>
-                            <div className="h-10 w-px bg-white" />
-                        </div>
-                        <span className="text-6xl font-black italic text-white leading-none">{players[1].setsWon}</span>
+                        {players.map((p, i) => (
+                            <Fragment key={p.id}>
+                                {i > 0 && (
+                                    <div className="flex flex-col items-center gap-1 opacity-20">
+                                        <span className="text-xs font-black italic tracking-widest">VS</span>
+                                        <div className="h-10 w-px bg-white" />
+                                    </div>
+                                )}
+                                <span className="text-6xl font-black italic text-white leading-none">{p.setsWon}</span>
+                            </Fragment>
+                        ))}
                     </div>
                     <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.5em] mt-6">Match Result</p>
                 </motion.div>
@@ -155,8 +152,8 @@ export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) 
                     className="space-y-4"
                 >
                     <div className="grid grid-cols-3 gap-2 px-2">
-                        <StatBox label="Average" value={getAvg(players[0])} color={winner.color} />
-                        <StatBox label="Darts" value={players[0].totalDartsThrown.toString()} color={winner.color} />
+                        <StatBox label="Average" value={getAvg(winner)} color={winner.color} />
+                        <StatBox label="Darts" value={winner.totalDartsThrown.toString()} color={winner.color} />
                         <StatBox label="Checkout" value="32%" color={winner.color} />
                     </div>
                     <button className="flex items-center gap-2 mx-auto text-zinc-600 hover:text-white transition-colors py-1">

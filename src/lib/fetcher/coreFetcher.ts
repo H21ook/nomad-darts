@@ -16,7 +16,13 @@ export async function coreFetcher<T, TBody = undefined>(
   try {
     const { token, customHeaders } = options;
 
-    const url = new URL(endpoint, process.env.NEXT_PUBLIC_API_URL);
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:3000");
+
+    const url = new URL(endpoint, baseUrl);
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
