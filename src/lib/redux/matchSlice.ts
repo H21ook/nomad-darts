@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { MatchState, MatchSettings, PlayerInit, Turn } from "../../types/darts";
 import { nanoid } from "nanoid";
 import { getRandomPlayerColor, PLAYER_COLORS } from "../utils";
-import { RootState } from "./store";
+import type { RootState } from "./store";
 import {
   createEmptyLeg,
   createEmptySet,
