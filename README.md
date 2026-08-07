@@ -62,12 +62,6 @@ NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-Optional, used by the API fetcher for calling backend endpoints:
-
-```env
-NEXT_PUBLIC_API_URL=https://your-backend.example.com
-```
-
 ## Scripts
 
 ```bash
@@ -86,7 +80,7 @@ src/
 │   ├── auth/               # Login / sign-up pages
 │   ├── dashboard/          # Account dashboard (Supabase)
 │   ├── match/              # Setup, live match, stats, finished screens
-│   └── internal/           # Server-side auth routes (login/logout/refresh, health)
+│   └── internal/           # Health check route
 ├── proxy.ts                # Session refresh middleware (route protection)
 ├── sw.ts                   # Serwist service worker
 ├── components/
@@ -96,14 +90,12 @@ src/
 │   └── ui/                 # shadcn/ui components
 ├── hooks/
 ├── lib/
-│   ├── client-requests/    # Token refresh helper
-│   ├── fetcher/            # Typed API fetchers (client/server/core)
 │   ├── redux/              # Redux store, auth & match slices, match logic utils
 │   ├── schema/             # Zod schemas for forms
 │   ├── supabase/           # Browser/server/proxy clients
 │   └── utils.ts            # cn(), player colors, checkout helpers
 ├── providers/              # Redux provider + persist gate
-└── types/                  # Shared TypeScript types (darts, auth)
+└── types/                  # Shared TypeScript types (darts)
 ```
 
 ## Match Model

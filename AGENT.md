@@ -60,15 +60,10 @@ pnpm build
 ### Data & types
 
 - `src/types/darts.ts` — `Throw`, `Turn`, `LegType`, `SetType`, `Match`, `MatchState`. The hierarchical model is Throw → Turn → Leg → Set → Match.
-- `src/types/index.ts` — `CustomResponse<T>` union used by the fetcher.
-- `src/types/auth-types.ts` — token response shapes.
 
 ### Data fetching & auth
 
-- `src/lib/fetcher/` — `coreFetcher` (base), `clientFetcher` (adds 401 refresh + redirect), `serverFetcher`.
-- `src/lib/client-requests/index.ts` — deduped `refreshAccessToken`.
 - `src/lib/supabase/` — `client.ts` (browser), `server.ts` (server components), `proxy.ts` (middleware). All read `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-- `src/lib/tokens.ts` — httpOnly cookie access/refresh token helpers (used by the stub auth flow).
 
 ### UI conventions
 
