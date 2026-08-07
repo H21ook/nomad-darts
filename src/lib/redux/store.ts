@@ -12,17 +12,19 @@ import {
 import storage from "redux-persist/lib/storage";
 import authReducer from "./authSlice";
 import matchReducer from "./matchSlice";
+import matchHistoryReducer from "./matchHistorySlice";
 
 const persistConfig = {
   key: "root",
   version: 1,
   storage,
-  whitelist: ["match"], // 👈 зөвхөн match хадгална
+  whitelist: ["match", "matchHistory"], // 👈 match + guest match history хадгална
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
   match: matchReducer,
+  matchHistory: matchHistoryReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
