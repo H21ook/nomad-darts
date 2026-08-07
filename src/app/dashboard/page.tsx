@@ -1,16 +1,26 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { IconArrowLeft, IconTrophy, IconTarget } from '@tabler/icons-react';
+import { IconArrowLeft, IconTrophy, IconTarget, IconHistory } from '@tabler/icons-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
 import { Match } from '@/types/darts';
+import { useMatchHistory } from '@/lib/redux/matchHistorySlice';
 
 const supabase = createClient();
+
+function formatDate(ts: number) {
+    return new Date(ts).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+}
 
 export default function Dashboard() {
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
+    const localMatches = useMatchHistory();
 
     useEffect(() => {
         async function loadStats() {
@@ -127,6 +137,65 @@ export default function Dashboard() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Local Match History (guest, persisted on device via redux-persist) */}
+                <Card className="mt-6 bg-card/80 backdrop-blur-xl border-border/50">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <IconHistory size={20} className="text-primary" />
+                            Match History
+                        </CardTitle>
+                        <CardDescription>Finished matches saved on this device</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {localMatches.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-muted-foreground text-sm">No finished matches yet</p>
+                                <Link href="/match/setup" className="text-primary hover:underline text-sm mt-2 inline-block">
+                                    Start your first game
+                                </Link>
+                            </div>
+                        ) : (
+                            <ul className="space-y-3">
+                                {localMatches.map(m => {
+                                    const winner = m.players.find(p => p.id === m.winnerId);
+                                    const scoreKey = m.settings.setsEnabled ? 'setsWon' : 'legsWon';
+                                    return (
+                                        <li key={m.id} className="p-3 rounded-lg bg-background/50 border border-border/30">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-xs text-muted-foreground">{formatDate(m.date)}</span>
+                                                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                                                    {m.settings.startingScore} · {m.settings.checkout === 'double' ? 'D/O' : 'S/O'}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                {m.players.map(p => {
+                                                    const isWinner = p.id === m.winnerId;
+                                                    return (
+                                                        <div key={p.id} className="flex items-center gap-2 min-w-0">
+                                                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                                                            <span className={`text-sm truncate ${isWinner ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+                                                                {p.name}
+                                                            </span>
+                                                            {isWinner && <IconTrophy size={14} className="text-yellow-500 shrink-0" />}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                                                <span>
+                                                    {m.settings.setsEnabled ? 'Sets' : 'Legs'}:{' '}
+                                                    {m.finalScores.map(f => f[scoreKey]).join(' – ')}
+                                                </span>
+                                                <span>{winner ? `${winner.name} wins` : 'Draw'}</span>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
