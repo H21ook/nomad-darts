@@ -38,7 +38,7 @@ pnpm build
 - `src/app/match/finished/page.tsx` — result screen; redirects home if match not finished.
 - `src/app/auth/login|sign-up/page.tsx` — auth pages (Supabase).
 - `src/app/dashboard/page.tsx` — reads the `matches` table from Supabase.
-- `src/app/internal/*` — server routes. Auth routes are NOT wired to a real backend yet (they use stubbed tokens). Do not confuse these with Supabase auth, which is the live path.
+- `src/app/internal/*` — server routes. Only a health check route remains; the stub auth routes were removed. Supabase auth is the live path.
 - `src/proxy.ts` — session middleware that calls `updateSession` (`src/lib/supabase/proxy.ts`). It protects `/dashboard/:path*` and `/match/:path*` and redirects unauthenticated users to `/auth/login` — keep the redirect path consistent if you touch it.
 
 ### State management
