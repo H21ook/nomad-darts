@@ -19,3 +19,10 @@ Implemented in workflow WF-20260807-043915-research-plan:
 - **Guest match history:** local (localStorage via redux-persist) dashboard card.
 - **Client 401-refresh fixed:** `refreshAccessToken` now POSTs to the refresh route.
 - **Cleanup:** dead stub auth + fetcher layer removed; 10 unused deps and 41 unused ui components removed; generated service worker no longer committed.
+
+## Test suite (2026-08-07)
+
+- **Runner:** Vitest 4.1.x (`pnpm test`), node environment, `vitest.config.ts` with tsconfigPaths.
+- **Files:** `src/lib/__tests__/utils.test.ts` (11 tests), `src/lib/redux/__tests__/matchSlice.test.ts` (31 tests) — 42 total.
+- **Scope:** pure logic only (matchSlice reducers, game helpers, utils). Component/UI tests deferred.
+- **Determinism:** `randomOrder: false`, invariant assertions only.
