@@ -89,8 +89,8 @@ export default function MatchPage() {
                 />
 
                 <NumberPad
-                    onSubmit={(score, dartsUsed) =>
-                        dispatch(submitTurn({ score, dartsUsed }))
+                    onSubmit={(score, dartsUsed, isBust) =>
+                        dispatch(submitTurn({ score, dartsUsed, isBust }))
                     }
                     currentScore={match.players[currentPlayerIndex].score}
                     onUndo={() => dispatch(undo())}

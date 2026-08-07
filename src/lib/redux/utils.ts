@@ -9,7 +9,6 @@ export const createEmptyLeg = (
   id: nanoid(),
   winnerId: null,
   turns: [],
-  dartsToFinish: 0,
   startScore: startingScore,
   startTime: Date.now(),
   startPlayerIndex,
