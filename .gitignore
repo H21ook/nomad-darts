@@ -45,3 +45,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .serena
+
+# OPENCODE_STATEFUL_WORKFLOW_START
+# OpenCode active workflow runtime artifacts
+.opencode/workflows/*
+!.opencode/workflows/.gitkeep
+
+# High-risk workflow archives may contain detailed agent/tool output.
+.opencode/archive/*
+!.opencode/archive/.gitkeep
+# OPENCODE_STATEFUL_WORKFLOW_END
