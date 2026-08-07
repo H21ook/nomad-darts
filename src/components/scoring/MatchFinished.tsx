@@ -9,6 +9,7 @@ import { useEffect, Fragment } from "react";
 import confetti from "canvas-confetti";
 import { AppBar } from "../ui/app-bar";
 import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface MatchFinishedProps {
@@ -156,10 +157,10 @@ export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) 
                         <StatBox label="Darts" value={winner.totalDartsThrown.toString()} color={winner.color} />
                         <StatBox label="Checkout" value="32%" color={winner.color} />
                     </div>
-                    <button className="flex items-center gap-2 mx-auto text-zinc-600 hover:text-white transition-colors py-1">
+                    <Link href="/match/stats" className="flex items-center gap-2 mx-auto text-zinc-600 hover:text-white transition-colors py-1">
                         <IconChartBar size={14} />
                         <span className="text-[9px] font-black uppercase tracking-widest">Full Statistics</span>
-                    </button>
+                    </Link>
                 </motion.div>
 
                 {/* 5. Action Buttons: Доор нь тулгаж өгөв */}
