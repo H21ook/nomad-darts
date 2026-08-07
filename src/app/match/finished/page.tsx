@@ -8,6 +8,11 @@ import { redirect } from 'next/navigation';
 const MatchFinishedPage = () => {
     const match = useAppSelector(state => state.match);
 
+    // Rematch-ийн дараа шууд амьд тоглолтын дэлгэц рүү буцах
+    if (match.status === "playing") {
+        redirect('/match')
+    }
+
     if (match.status !== "match_finished") {
         redirect('/')
     }
