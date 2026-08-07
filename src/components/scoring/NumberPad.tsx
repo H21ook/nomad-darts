@@ -7,7 +7,7 @@ import { FinishConfirmation } from './FinishConfirmation';
 import SubmitButton from './SubmitButton';
 
 interface NumberPadProps {
-    onSubmit: (score: number, dartsUsed?: number) => void;
+    onSubmit: (score: number, dartsUsed?: number, isBust?: boolean) => void;
     onUndo?: () => void;
     canUndo?: boolean;
     currentScore: number;
@@ -18,6 +18,7 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
     const [value, setValue] = useState('');
     const [displayMode, setDisplayMode] = useState<'number' | 'text'>('number');
     const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+    const [dartsUsed, setDartsUsed] = useState(3);
 
     const canFinish = checkFinishablePoint(currentScore);
 
@@ -54,9 +55,16 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
     const handleSubmit = () => {
         if (!value) return;
 
+        if (value === 'BUST') {
+            onSubmit(0, 3, true);
+            setValue('');
+            setDisplayMode('number');
+            setDartsUsed(3);
+            return;
+        }
+
         let finalScore = 0;
-        if (value === 'BUST') finalScore = 0;
-        else if (value === 'BULL') finalScore = 50;
+        if (value === 'BULL') finalScore = 50;
         else if (value === 'FINISH') {
             finalScore = currentScore;
         }
@@ -66,15 +74,17 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
             setShowFinishConfirm(true);
             return;
         }
-        onSubmit(finalScore, 3);
+        onSubmit(finalScore, dartsUsed);
         setValue('');
         setDisplayMode('number');
+        setDartsUsed(3);
     };
 
     const handleActualSubmit = (dartsUsed?: number) => {
         onSubmit(currentScore, dartsUsed);
         setValue('');
         setShowFinishConfirm(false);
+        setDartsUsed(3);
     };
 
     return (
@@ -135,6 +145,29 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                     <IconTrophy size={18} />
                     <span className="text-[10px] font-black mt-1">FINISH</span>
                 </button>
+            </div>
+
+            {/* Dart counter - шидсэн сумны тоо */}
+            <div className="flex-[0.5] flex items-center justify-between gap-2 px-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
+                    Darts
+                </span>
+                <div className="flex gap-2">
+                    {[1, 2, 3].map((n) => (
+                        <button
+                            key={n}
+                            onPointerDown={(e) => { e.preventDefault(); setDartsUsed(n); }}
+                            className={cn(
+                                "w-10 h-8 rounded-lg border text-sm font-black transition-all duration-75 active:scale-95",
+                                dartsUsed === n
+                                    ? "bg-cyan-500 text-black border-cyan-500"
+                                    : "bg-zinc-900 border-white/10 text-zinc-400"
+                            )}
+                        >
+                            {n}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Number Grid - Хэт хурдан хариу үйлдэл */}

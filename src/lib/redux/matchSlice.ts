@@ -33,8 +33,6 @@ const initialState: MatchState = {
       color: getRandomPlayerColor(),
       totalDartsThrown: 0,
       totalPointsScored: 0,
-      checkoutAttempts: 0,
-      lastThrows: [],
     },
     {
       id: nanoid(),
@@ -46,8 +44,6 @@ const initialState: MatchState = {
       color: getRandomPlayerColor(),
       totalDartsThrown: 0,
       totalPointsScored: 0,
-      checkoutAttempts: 0,
-      lastThrows: [],
     },
   ],
   active: null,
@@ -92,8 +88,6 @@ const matchSlice = createSlice({
           setsWon: 0,
           totalDartsThrown: 0,
           totalPointsScored: 0,
-          checkoutAttempts: 0,
-          lastThrows: [],
         };
       });
 
@@ -124,7 +118,7 @@ const matchSlice = createSlice({
 
     submitTurn: (
       state,
-      action: PayloadAction<{ score: number; dartsUsed?: number }>
+      action: PayloadAction<{ score: number; dartsUsed?: number; isBust?: boolean }>
     ) => {
       if (state.status !== "playing" || state.active === null) return;
 
@@ -132,11 +126,13 @@ const matchSlice = createSlice({
 
       const activePlayerIndex = state.active.playerIndex;
       const activePlayer = state.players[activePlayerIndex];
-      const { score, dartsUsed = 0 } = action.payload;
+      const { score, dartsUsed = 0, isBust: explicitBust = false } = action.payload;
       const remaining = activePlayer.score - score;
 
-      // 1. Bust Logic
+      // 1. Bust Logic: BUST товч (explicit) эсвэл автомат илрүүлэлт
+      // (хэтрүүлсэн / double-out үед 1 дээр үлдсэн)
       const isBust =
+        explicitBust ||
         remaining < 0 ||
         (remaining === 1 && state.settings.checkout === "double");
 
@@ -145,7 +141,6 @@ const matchSlice = createSlice({
         points: isBust ? 0 : score,
         isBust: isBust,
         dartsUsed: isBust ? 3 : dartsUsed, // шидсэн сумны тоо
-        throws: [],
         remainingScore: isBust ? activePlayer.score : remaining,
         timestamp: Date.now(),
       };
@@ -254,8 +249,6 @@ const matchSlice = createSlice({
           setsWon: 0,
           totalDartsThrown: 0,
           totalPointsScored: 0,
-          checkoutAttempts: 0,
-          lastThrows: [],
         };
       });
 

@@ -14,8 +14,6 @@ export interface Player {
   order: number;
   totalDartsThrown: number; // Нийт шидсэн сумны тоо (Average тооцоход)
   totalPointsScored: number; // Нийт авсан оноо
-  checkoutAttempts: number; // Double руу шидсэн оролдлого
-  lastThrows: number[];
   color: string;
   image?: string;
 }
@@ -29,17 +27,9 @@ export interface MatchSettings {
   randomOrder: boolean;
 }
 
-// 1. Хамгийн жижиг нэгж: Нэг шидэлт
-export interface Throw {
-  score: number; // Тухайн сумаар авсан оноо (0-60)
-  multiplier: 1 | 2 | 3; // Single, Double, Triple
-  segment: number; // 1-20, 25 (Bull)
-}
-
-// 2. Ээлж: Тоглогчийн нэг удаа самбарт очих үе (3 сум)
+// Ээлж: Тоглогчийн нэг удаа самбарт очих үе (3 сум)
 export interface Turn {
   playerId: string;
-  throws?: Throw[]; // 3 хүртэлх сум
   points: number; // Энэ ээлжинд авсан нийт оноо
   isBust: boolean;
   dartsUsed: number;
@@ -53,7 +43,6 @@ export interface LegType {
   winnerId: string | null;
   turns: Turn[]; // Энэ лег-д хийгдсэн бүх ээлжүүд
   startScore: number; // 501, 301 гэх мэт
-  dartsToFinish: number; // Нийт хэдэн сумаар дуусгасан (Stats)
   startTime: number;
   startPlayerIndex: number;
 }
@@ -87,17 +76,6 @@ export interface MatchSnapshot {
   lastLegWinnerId: string | null;
   winnerId: string | null;
 }
-
-// export interface MatchState {
-//   matchId: string | null;
-//   settings: MatchSettings;
-//   players: Player[];
-//   activePlayerIndex: number; // 0 or 1
-//   history: MatchSnapshot[]; // For Undo/Redo - snapshots of state
-//   status: MatchStatus;
-//   winnerId: string | null;
-//   currentTurnThrows: Throw[]; // Throws in the current turn (up to 3)
-// }
 
 export interface Active {
   playerIndex: number;
