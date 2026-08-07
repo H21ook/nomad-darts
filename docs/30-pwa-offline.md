@@ -2,10 +2,10 @@
 
 ## Current Implementation
 
-- next-pwa: @ducanh2912/next-pwa
-- next.config: PWA enabled in production only (disabled in development)
-- register: true
-- dest: public
+- serwist: `@serwist/next` + `serwist` (migrated in commit e1d665b)
+- next.config.ts: wrapped with `withSerwistInit`; PWA enabled in production only (disabled in development)
+- swSrc: `src/sw.ts` → swDest: `public/sw.js`
+- Service worker: precaches the build manifest, `skipWaiting` + `clientsClaim`, navigation preload, `defaultCache` runtime caching
 
 ## Manifest
 

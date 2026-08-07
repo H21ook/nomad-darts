@@ -24,7 +24,7 @@ pnpm lint
 pnpm build
 ```
 
-- Dev and build use webpack explicitly (`next dev --webpack`, `next build --webpack`).
+- `dev` runs plain `next dev`; `build` uses `next build --webpack` explicitly.
 - `pnpm build` is the ultimate correctness check — run it after non-trivial changes.
 
 ## Architecture & Key Files
@@ -34,18 +34,20 @@ pnpm build
 - `src/app/page.tsx` — landing page (guest quick start, login/sign-up links).
 - `src/app/match/setup/page.tsx` — match configuration (score, format, players).
 - `src/app/match/page.tsx` — live scoring screen (scoreboard + number pad).
+- `src/app/match/stats/page.tsx` — full statistics page (per-player PPR, darts, checkout).
 - `src/app/match/finished/page.tsx` — result screen; redirects home if match not finished.
 - `src/app/auth/login|sign-up/page.tsx` — auth pages (Supabase).
 - `src/app/dashboard/page.tsx` — reads the `matches` table from Supabase.
 - `src/app/internal/*` — server routes. Auth routes are NOT wired to a real backend yet (they use stubbed tokens). Do not confuse these with Supabase auth, which is the live path.
-- `src/app/proxy.ts` — session middleware that calls `updateSession` (`src/lib/supabase/proxy.ts`). It redirects unauthenticated users to `/login`, but the actual login page is `/auth/login` — keep this consistent if you touch it.
+- `src/proxy.ts` — session middleware that calls `updateSession` (`src/lib/supabase/proxy.ts`). It protects `/dashboard/:path*` and `/match/:path*` and redirects unauthenticated users to `/auth/login` — keep the redirect path consistent if you touch it.
 
 ### State management
 
-- `src/lib/redux/store.ts` — Redux store with `redux-persist`; only the `match` slice is persisted (`whitelist`).
+- `src/lib/redux/store.ts` — Redux store with `redux-persist`; only the `match` and `matchHistory` slices are persisted (`whitelist`).
 - `src/lib/redux/matchSlice.ts` — all match actions: `startMatch`, `submitTurn`, `undo`, `startNextLeg`, `rematch`. **This is the core game logic.**
 - `src/lib/redux/utils.ts` — pure helpers: leg/set creation, bust/checkout handling, `handleLegWin`, `finishSet`, `finishMatch`, snapshotting.
-- `src/lib/redux/authSlice.ts` — stores the Supabase access token (slice name is `"counter"`, leave as-is).
+- `src/lib/redux/authSlice.ts` — stores the Supabase access token (slice name is `"auth"`).
+- `src/lib/redux/matchHistorySlice.ts` — local (guest) match history persisted in the browser (slice name is `"matchHistory"`).
 
 ### Game rules (matchSlice/utils)
 
@@ -86,5 +88,5 @@ pnpm build
 5. Remove debug logging (`console.log`, `console.trace`) from new code.
 6. When changing game logic in `matchSlice.ts`, verify against the typecheck, lint, and build.
 7. UI copy is currently English with some Mongolian developer comments in `matchSlice.ts`/scoring components — keep comments consistent with their existing language where you edit them.
-8. `MatchFinished.tsx` and score sections assume exactly 2 players (`players[0]`, `players[1]`); `PlayerList` supports more. If you extend player count, update those assumptions.
-9. **Bump `version` in `package.json` before every push to `main`** — the app version shown in the footer reads `NEXT_PUBLIC_APP_VERSION`, which `next.config.ts` derives from `package.json` at build time. Bump as a separate `chore(release): bump version to x.y.zz` commit.
+8. Scoring components (`ScoreBoard`, `MatchFinished`, `LegTransition`, `StatsPage`) map over `players` and are N-player safe — no hardcoded `players[0]`/`players[1]` assumptions. Keep it that way when extending player count.
+9. **Bump `version` in `package.json` before every push to `main`** — the app version shown in the footer reads `NEXT_PUBLIC_APP_VERSION`, which `next.config.ts` derives from `package.json` at build time. Procedure: (1) bump `version` to the next semver value (never decrease it), (2) commit ONLY `package.json` with message `chore(release): bump version to x.y.zz`, (3) then push to `main`. Do not fold the bump into feature commits.

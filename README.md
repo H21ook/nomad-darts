@@ -2,20 +2,22 @@
 
 The simple way to track your score.
 
-A mobile-first darts (X01) scoreboard web app built with Next.js 16, React 19, and Redux Toolkit. It features full match tracking (legs and sets), in-game stats (PPR, darts, checkout), undoing turns, rematches, and optional Supabase-backed accounts and match history.
+A mobile-first darts (X01) scoreboard web app built with Next.js 16, React 19, and Redux Toolkit. It features full match tracking (legs and sets), in-game stats (PPR, darts, checkout), undoing turns, rematches, resuming in-progress matches, and optional Supabase-backed accounts with local guest match history.
 
 ## Features
 
 - **X01 game modes** with starting scores of 101, 201, 301, or 501
 - **Legs & Sets formats** — best-of / first-to-leg and set-based matches
-- **Double Out / Straight Out** checkout rules with bust handling
+- **Double Out / Straight Out** checkout rules with bust handling and a finish confirmation dialog for double-out checkouts
 - **Player setup** — add/remove players, drag to reorder, randomize starting order
 - **Fast score entry** — touch-optimized number pad with BUST, BULL, and FINISH shortcuts
 - **Live stats** — per-leg average, darts thrown, sets/legs won
+- **Full statistics page** — per-player PPR, darts, and checkout stats at `/match/stats`
 - **Undo** — snapshot-based, up to 20 turns back
 - **Match flow** — animated leg transitions, finish confirmation, confetti victory screen, one-tap rematch
-- **Accounts & dashboard** — sign up / sign in with Supabase, view recent matches
-- **PWA** — installable, offline-capable (via `next-pwa`)
+- **Resume** — landing page shows a Resume CTA for in-progress matches (restored from local persistence)
+- **Accounts & dashboard** — sign up / sign in with Supabase, view recent matches; guests get a local match history on the device
+- **PWA** — installable, offline-capable (via serwist)
 
 ## Tech Stack
 
@@ -25,9 +27,10 @@ A mobile-first darts (X01) scoreboard web app built with Next.js 16, React 19, a
 | UI | [React](https://react.dev) 19, [Tailwind CSS](https://tailwindcss.com) v4, [shadcn/ui](https://ui.shadcn.com) (radix-vega, Tabler icons) |
 | State | [Redux Toolkit](https://redux-toolkit.js.org) + `redux-persist` (match persisted locally) |
 | Auth / Data | [Supabase](https://supabase.com) (`@supabase/ssr`) |
+| PWA | [serwist](https://serwist.pages.dev) (`@serwist/next` + `serwist`) |
 | Forms | `react-hook-form` + `zod` |
 | Animation | `framer-motion`, `canvas-confetti` |
-| Charts (planned) | `recharts` |
+| Charts | `recharts` |
 
 ## Getting Started
 
@@ -48,7 +51,7 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-> Note: `dev` and `build` scripts use `next --webpack` explicitly.
+> Note: `build` uses `next build --webpack` explicitly; `dev` runs plain `next dev`.
 
 ### Environment variables
 
@@ -68,7 +71,7 @@ NEXT_PUBLIC_API_URL=https://your-backend.example.com
 ## Scripts
 
 ```bash
-pnpm dev        # Start development server (webpack)
+pnpm dev        # Start development server
 pnpm build      # Production build (webpack)
 pnpm start      # Start production server
 pnpm lint       # Run ESLint
@@ -79,12 +82,13 @@ pnpm lint       # Run ESLint
 ```text
 src/
 ├── app/                    # App Router pages
-│   ├── page.tsx            # Landing page
-│   ├── proxy.ts            # Session refresh middleware
+│   ├── page.tsx            # Landing page (guest quick start, Resume CTA)
 │   ├── auth/               # Login / sign-up pages
 │   ├── dashboard/          # Account dashboard (Supabase)
-│   ├── match/              # Setup, live match, finished screens
+│   ├── match/              # Setup, live match, stats, finished screens
 │   └── internal/           # Server-side auth routes (login/logout/refresh, health)
+├── proxy.ts                # Session refresh middleware (route protection)
+├── sw.ts                   # Serwist service worker
 ├── components/
 │   ├── forms/              # Login / sign-up forms
 │   ├── match/              # Match setup UI, player list (drag-to-reorder)
