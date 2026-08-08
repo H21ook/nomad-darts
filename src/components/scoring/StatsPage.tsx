@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { checkFinishablePoint } from "@/lib/utils";
-import type { LegType, MatchState, Player } from "@/types/darts";
+import { PlayerStats, buildPlayerStats } from "@/lib/stats";
 import { AppBar } from "@/components/ui/app-bar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,101 +24,6 @@ import {
     IconTargetArrow,
     IconTrophy,
 } from "@tabler/icons-react";
-
-// Дууссан тоглолтын нэг тоглогчийн статистик
-interface PlayerStats {
-    player: Player;
-    isWinner: boolean;
-    ppr: number;
-    dartsThrown: number;
-    pointsScored: number;
-    legsWon: number;
-    setsWon: number;
-    checkouts: number;
-    checkoutAttempts: number;
-    checkoutPct: number | null;
-}
-
-// Бүх дууссан leg-үүдийг (давхардлаас зайлсхийж) цуглуулна.
-// Sets-гүй горимд сүүлийн сет history-д хадгалагдахгүй тул
-// active.currentSet-ийн leg-үүдийг нэмж авна.
-const collectLegs = (match: MatchState): LegType[] => {
-    const seen = new Set<string>();
-    const legs: LegType[] = [];
-
-    for (const set of match.history.completedSets) {
-        for (const leg of set.legs) {
-            if (!seen.has(leg.id)) {
-                seen.add(leg.id);
-                legs.push(leg);
-            }
-        }
-    }
-
-    for (const leg of match.active?.currentSet.legs ?? []) {
-        if (!seen.has(leg.id)) {
-            seen.add(leg.id);
-            legs.push(leg);
-        }
-    }
-
-    return legs;
-};
-
-const buildPlayerStats = (
-    player: Player,
-    match: MatchState,
-    legs: LegType[],
-    winnerId: string | null
-): PlayerStats => {
-    // Сетүүд нь зөвхөн history.completedSets-д бүртгэгддэг
-    const setsWon = match.history.completedSets.filter(
-        (set) => set.winnerId === player.id
-    ).length;
-
-    const legsWon = legs.filter((leg) => leg.winnerId === player.id).length;
-
-    let checkouts = 0;
-    let checkoutAttempts = 0;
-
-    for (const leg of legs) {
-        for (const turn of leg.turns) {
-            if (turn.playerId !== player.id) continue;
-
-            // Ээлжийн эхэн дэх оноо (bust үед оноо өөрчлөгдөөгүй хэвээр)
-            const startScore = turn.isBust
-                ? turn.remainingScore
-                : turn.remainingScore + turn.points;
-
-            // Checkout оролдлого = ээлжийн эхэнд finishable оноотой байсан
-            if (checkFinishablePoint(startScore)) checkoutAttempts += 1;
-            // Checkout = ээлж дуусахад яг 0 үлдсэн (bust биш)
-            if (!turn.isBust && turn.remainingScore === 0) checkouts += 1;
-        }
-    }
-
-    // PPR = оноо / (шидсэн сум / 3)
-    const ppr =
-        player.totalDartsThrown > 0
-            ? player.totalPointsScored / (player.totalDartsThrown / 3)
-            : 0;
-
-    return {
-        player,
-        isWinner: player.id === winnerId,
-        ppr,
-        dartsThrown: player.totalDartsThrown,
-        pointsScored: player.totalPointsScored,
-        legsWon,
-        setsWon,
-        checkouts,
-        checkoutAttempts,
-        checkoutPct:
-            checkoutAttempts > 0
-                ? (checkouts / checkoutAttempts) * 100
-                : null,
-    };
-};
 
 const formatPct = (value: number | null) =>
     value === null ? "—" : `${value.toFixed(1)}%`;
@@ -152,10 +56,7 @@ export function StatsPage() {
         );
     }
 
-    const legs = collectLegs(match);
-    const stats = players.map((p) =>
-        buildPlayerStats(p, match, legs, match.winnerId)
-    );
+    const stats = buildPlayerStats(match);
 
     const headline = `${match.settings.startingScore} • ${
         match.settings.setsEnabled

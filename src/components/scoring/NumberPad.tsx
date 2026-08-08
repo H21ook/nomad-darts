@@ -41,7 +41,13 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
         setDisplayMode('text');
         if (type === 'BUST') setValue('BUST');
         if (type === 'BULL') setValue('50');
-        if (type === 'FINISH') setValue(currentScore.toString());
+        if (type === 'FINISH') {
+            onSubmit(currentScore, dartsUsed);
+            setValue('');
+            setDisplayMode('number');
+            setDartsUsed(3);
+            return;
+        }
         if (navigator.vibrate) navigator.vibrate(10);
     };
 
@@ -150,7 +156,7 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
             {/* Dart counter - шидсэн сумны тоо */}
             <div className="flex-[0.5] flex items-center justify-between gap-2 px-1">
                 <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
-                    Darts
+                    Darts used
                 </span>
                 <div className="flex gap-2">
                     {[1, 2, 3].map((n) => (
@@ -187,7 +193,7 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                         handleClearOrUndo();
                     }}
                     disabled={!canUndo}
-                    className='bg-red-500/20 text-red-500 hover:bg-red-500/40'
+                    className='bg-zinc-900 text-zinc-400 border border-white/10 hover:bg-zinc-800 hover:text-white'
                 >
                     <IconRotateClockwise2 size={24} />
                     <span className="text-[10px] font-black ml-0.5 mt-1 uppercase tracking-wider">
@@ -209,7 +215,15 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
             </div>
 
             {showFinishConfirm && (
-                <FinishConfirmation onConfirm={handleActualSubmit} onCancel={() => setShowFinishConfirm(false)} />
+                <FinishConfirmation
+                    onConfirm={handleActualSubmit}
+                    onCancel={() => {
+                        setValue('');
+                        setDisplayMode('number');
+                        setShowFinishConfirm(false);
+                        setDartsUsed(3);
+                    }}
+                />
             )}
         </div>
     );

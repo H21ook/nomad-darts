@@ -57,7 +57,7 @@ const MatchFinishedPage = () => {
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-50"
         >
-            <MatchFinished id={match.id} winner={winner} players={match.players} />
+            <MatchFinished id={match.id} winner={winner} players={match.players} match={match} />
         </motion.div>
     )
 }

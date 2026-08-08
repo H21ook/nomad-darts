@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { selectCanUndo, submitTurn, undo, abandonMatch } from '@/lib/redux/matchSlice';
 import { ScoreBoard } from '@/components/scoring/ScoreBoard';
@@ -7,16 +7,8 @@ import { NumberPad } from '@/components/scoring/NumberPad';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LegTransition } from '@/components/scoring/LegTransition';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { AppBar } from '@/components/ui/app-bar';
+import { ExitConfirmation } from '@/components/match/ExitConfirmation';
 import { IconX } from '@tabler/icons-react';
 
 export default function MatchPage() {
@@ -47,10 +39,18 @@ export default function MatchPage() {
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
+    const prevStatusRef = useRef(match.status);
+
     useEffect(() => {
         if (match.status === 'match_finished') {
-            router.replace('/match/finished');
+            if (prevStatusRef.current === 'match_finished') {
+                // Arrived via browser back — go home, no bounce
+                router.replace('/');
+            } else {
+                router.replace('/match/finished');
+            }
         }
+        prevStatusRef.current = match.status;
     }, [match.status, router]);
 
     useEffect(() => {
@@ -66,20 +66,12 @@ export default function MatchPage() {
 
     return (
         <div className="flex flex-col h-dvh bg-background overflow-hidden">
-            {/* Compact match header — X товч */}
-            <div className="flex items-center justify-between px-3 h-10 shrink-0 border-b border-white/5">
-                <button
-                    onPointerDown={(e) => { e.preventDefault(); setShowExitDialog(true); }}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg text-zinc-600 active:text-white transition-colors"
-                    aria-label="Тоглоомоос гарах"
-                >
-                    <IconX size={18} />
-                </button>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-700">
-                    {match.settings.startingScore} · {match.settings.checkout === 'double' ? 'D/O' : 'S/O'}
-                </span>
-                <div className="w-8" />
-            </div>
+            {/* Match header — AppBar */}
+            <AppBar
+                title={`${match.settings.startingScore} · ${match.settings.checkout === 'double' ? 'D/O' : 'S/O'}`}
+                onBack={() => setShowExitDialog(true)}
+                backButtonIcon={<IconX size={18} />}
+            />
 
             <div className="flex-1 flex flex-col justify-end pb-safe overflow-hidden">
                 <ScoreBoard
@@ -113,25 +105,11 @@ export default function MatchPage() {
             </AnimatePresence>
 
             {/* Тоглоомоос гарах confirmation dialog */}
-            <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-                <AlertDialogContent size="sm">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Тоглоомоос гарах уу?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Одоогийн тоглоомын явц устагдана.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Үргэлжлүүлэх</AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            onClick={handleAbandon}
-                        >
-                            Гарах
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ExitConfirmation
+                open={showExitDialog}
+                onOpenChange={setShowExitDialog}
+                onConfirm={handleAbandon}
+            />
         </div>
     );
 }

@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { startMatch } from '@/lib/redux/matchSlice';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from '@/components/ui/app-bar';
 import { cn, PLAYER_COLORS } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,7 +21,8 @@ const DEFAULT_PLAYERS: PlayerInit[] = [
 
 export function MatchSetup() {
     const dispatch = useAppDispatch();
-    const [step, setStep] = useState(1);
+    const searchParams = useSearchParams();
+    const [step, setStep] = useState(() => (searchParams.get('step') === '2' ? 2 : 1));
     const [direction, setDirection] = useState(0);
     const [playersList, setPlayersList] = useState<PlayerInit[]>(DEFAULT_PLAYERS);
     const [randomOrder, setRandomOrder] = useState(true);
@@ -31,7 +32,6 @@ export function MatchSetup() {
     const [firstToLegs, setFirstToLegs] = useState(3);
     const [checkout, setCheckout] = useState<CheckoutType>('double');
     const router = useRouter();
-    const pathname = usePathname();
 
     const startingScores: StartingScore[] = [101, 201, 301, 501];
 
@@ -66,39 +66,15 @@ export function MatchSetup() {
     const handleNext = () => {
         setDirection(1);
         setRandomOrder(true);
-        window.history.pushState({ step: 2 }, '', `${pathname}#order`);
+        router.replace('/match/setup?step=2');
         setStep(2);
     };
 
     const handleBack = () => {
-        window.history.back();
+        setDirection(-1);
+        router.replace('/match/setup');
+        setStep(1);
     };
-
-    useEffect(() => {
-        if (window.location.hash === '#order') {
-            window.history.back();
-        }
-    }, [])
-
-    useEffect(() => {
-        // Refresh хийх үед #order байвал арилгах (Таны хүссэнээр)
-        if (window.location.hash === '#order') {
-            window.history.replaceState(null, '', pathname);
-        }
-
-        const handlePopState = () => {
-            if (window.location.hash === '#order') {
-                setDirection(1);
-                setStep(2);
-            } else {
-                setDirection(-1);
-                setStep(1);
-            }
-        };
-
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, [pathname]);
 
     return (
         <div className="flex flex-col h-dvh w-full text-foreground overflow-hidden">

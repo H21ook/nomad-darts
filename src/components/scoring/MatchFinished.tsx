@@ -2,7 +2,8 @@
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { rematch } from "@/lib/redux/matchSlice"; // Rematch хийхэд ашиглана
-import { Player } from "@/types/darts";
+import { Player, MatchState } from "@/types/darts";
+import { buildPlayerStats, collectLegs } from "@/lib/stats";
 import { IconTrophy, IconCrown, IconChartBar } from "@tabler/icons-react";
 import { motion, Transition } from "framer-motion";
 import { useEffect, Fragment } from "react";
@@ -10,19 +11,29 @@ import confetti from "canvas-confetti";
 import { AppBar } from "../ui/app-bar";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface MatchFinishedProps {
     id: string;
     winner: Player;
     players: Player[];
+    match: MatchState;
 }
 
-export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) {
-    const dispatch = useAppDispatch();
+// Тоглолтын эхний leg-ийн эхлэх цагаар огноог форматлана
+const formatMatchDate = (match: MatchState) => {
+    const legs = collectLegs(match);
+    const firstTime = legs[0]?.startTime;
+    if (!firstTime) return '';
+    return new Date(firstTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+};
 
-    // Статистик тооцоолох функц
-    const getAvg = (p: Player) => (p.totalPointsScored / (p.totalDartsThrown / 3 || 1)).toFixed(1);
+export function MatchFinished({ id, winner, players = [], match }: MatchFinishedProps) {
+    const dispatch = useAppDispatch();
+    const router = useRouter();
+
+    const stats = buildPlayerStats(match);
 
     // Rematch үйлдэл
     const handleRematch = () => dispatch(rematch());
@@ -87,8 +98,8 @@ export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) 
             {/* 1. AppBar: Undo холбогдсон */}
             <AppBar
                 title="Match Result"
-                backHref="/"
-                description={`ID: #${id?.slice(0, 6) || 'B829-X'} • 24 OCT 2023`}
+                onBack={() => router.replace('/')}
+                description={`ID: #${id?.slice(0, 6) || 'B829-X'} • ${formatMatchDate(match)}`}
             />
 
             <div className="flex-1 flex flex-col justify-between p-4 max-w-sm mx-auto w-full">
@@ -152,10 +163,26 @@ export function MatchFinished({ id, winner, players = [] }: MatchFinishedProps) 
                     transition={{ ...fadeInUp.transition, delay: 0.6 }}
                     className="space-y-4"
                 >
-                    <div className="grid grid-cols-3 gap-2 px-2">
-                        <StatBox label="Average" value={getAvg(winner)} color={winner.color} />
-                        <StatBox label="Darts" value={winner.totalDartsThrown.toString()} color={winner.color} />
-                        <StatBox label="Checkout" value="32%" color={winner.color} />
+                    <div className="space-y-2">
+                        {stats.map((s) => (
+                            <div key={s.player.id} className="bg-zinc-900/60 border border-white/5 rounded-2xl p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-black uppercase tracking-widest" style={{ color: s.player.color }}>
+                                        {s.player.name}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-zinc-600 uppercase">
+                                        {s.isWinner ? 'Winner' : `${s.legsWon} legs`}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-5 gap-1">
+                                    <StatBox label="PPR" value={s.ppr.toFixed(1)} />
+                                    <StatBox label="Darts/L" value={s.avgDartsPerLeg.toFixed(1)} />
+                                    <StatBox label="Avg/T" value={s.avgScorePerTurn.toFixed(1)} />
+                                    <StatBox label="100+%" value={s.pct100Plus.toFixed(0)} />
+                                    <StatBox label="Chk%" value={s.checkoutPct === null ? '—' : s.checkoutPct.toFixed(0)} />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                     <Link href="/match/stats" className="flex items-center gap-2 mx-auto text-zinc-600 hover:text-white transition-colors py-1">
                         <IconChartBar size={14} />
