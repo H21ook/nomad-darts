@@ -45,6 +45,23 @@ describe("checkFinishablePoint", () => {
       expect(checkFinishablePoint(bogie)).toBe(false);
     }
   });
+
+  it("is mode-aware: straight-out allows score 1, double-out does not", () => {
+    expect(checkFinishablePoint(1, "straight")).toBe(true);
+    expect(checkFinishablePoint(1, "double")).toBe(false);
+    // Default parameter behaves as double-out
+    expect(checkFinishablePoint(1)).toBe(false);
+  });
+
+  it("applies bogie numbers in both checkout modes", () => {
+    expect(checkFinishablePoint(169, "straight")).toBe(false);
+    expect(checkFinishablePoint(169, "double")).toBe(false);
+  });
+
+  it("still accepts finishable scores in double-out mode", () => {
+    expect(checkFinishablePoint(170, "double")).toBe(true);
+    expect(checkFinishablePoint(2, "double")).toBe(true);
+  });
 });
 
 describe("PLAYER_COLORS", () => {

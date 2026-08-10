@@ -11,16 +11,16 @@ interface NumberPadProps {
     onUndo?: () => void;
     canUndo?: boolean;
     currentScore: number;
+    checkout?: 'double' | 'straight';
     className?: string;
 }
 
-export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPadProps) {
+export function NumberPad({ onSubmit, currentScore, onUndo, canUndo, checkout = 'double' }: NumberPadProps) {
     const [value, setValue] = useState('');
     const [displayMode, setDisplayMode] = useState<'number' | 'text'>('number');
     const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-    const [dartsUsed, setDartsUsed] = useState(3);
 
-    const canFinish = checkFinishablePoint(currentScore);
+    const canFinish = checkFinishablePoint(currentScore, checkout);
 
     const handlePress = useCallback((num: number) => {
         setDisplayMode('number');
@@ -42,10 +42,9 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
         if (type === 'BUST') setValue('BUST');
         if (type === 'BULL') setValue('50');
         if (type === 'FINISH') {
-            onSubmit(currentScore, dartsUsed);
             setValue('');
             setDisplayMode('number');
-            setDartsUsed(3);
+            setShowFinishConfirm(true);
             return;
         }
         if (navigator.vibrate) navigator.vibrate(10);
@@ -65,7 +64,6 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
             onSubmit(0, 3, true);
             setValue('');
             setDisplayMode('number');
-            setDartsUsed(3);
             return;
         }
 
@@ -77,20 +75,24 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
         else finalScore = parseInt(value);
 
         if (finalScore === currentScore) {
-            setShowFinishConfirm(true);
+            if (canFinish) {
+                setShowFinishConfirm(true);
+            }
+            // Exact-score entry on a non-finishable score (e.g. 169): block the
+            // submission entirely — submitting would incorrectly win the leg
+            // (remaining would hit 0). Keep the typed input so the player can
+            // correct it.
             return;
         }
-        onSubmit(finalScore, dartsUsed);
+        onSubmit(finalScore, 3);
         setValue('');
         setDisplayMode('number');
-        setDartsUsed(3);
     };
 
     const handleActualSubmit = (dartsUsed?: number) => {
         onSubmit(currentScore, dartsUsed);
         setValue('');
         setShowFinishConfirm(false);
-        setDartsUsed(3);
     };
 
     return (
@@ -153,29 +155,6 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                 </button>
             </div>
 
-            {/* Dart counter - шидсэн сумны тоо */}
-            <div className="flex-[0.5] flex items-center justify-between gap-2 px-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
-                    Darts used
-                </span>
-                <div className="flex gap-2">
-                    {[1, 2, 3].map((n) => (
-                        <button
-                            key={n}
-                            onPointerDown={(e) => { e.preventDefault(); setDartsUsed(n); }}
-                            className={cn(
-                                "w-10 h-8 rounded-lg border text-sm font-black transition-all duration-75 active:scale-95",
-                                dartsUsed === n
-                                    ? "bg-cyan-500 text-black border-cyan-500"
-                                    : "bg-zinc-900 border-white/10 text-zinc-400"
-                            )}
-                        >
-                            {n}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
             {/* Number Grid - Хэт хурдан хариу үйлдэл */}
             <div className="flex-4 grid grid-cols-3 grid-rows-4 gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
@@ -221,7 +200,6 @@ export function NumberPad({ onSubmit, currentScore, onUndo, canUndo }: NumberPad
                         setValue('');
                         setDisplayMode('number');
                         setShowFinishConfirm(false);
-                        setDartsUsed(3);
                     }}
                 />
             )}

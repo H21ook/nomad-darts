@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { startMatch } from '@/lib/redux/matchSlice';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { AppBar } from '@/components/ui/app-bar';
 import { cn, PLAYER_COLORS } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,8 +21,7 @@ const DEFAULT_PLAYERS: PlayerInit[] = [
 
 export function MatchSetup() {
     const dispatch = useAppDispatch();
-    const searchParams = useSearchParams();
-    const [step, setStep] = useState(() => (searchParams.get('step') === '2' ? 2 : 1));
+    const [step, setStep] = useState(1);
     const [direction, setDirection] = useState(0);
     const [playersList, setPlayersList] = useState<PlayerInit[]>(DEFAULT_PLAYERS);
     const [randomOrder, setRandomOrder] = useState(true);
@@ -66,13 +65,11 @@ export function MatchSetup() {
     const handleNext = () => {
         setDirection(1);
         setRandomOrder(true);
-        router.replace('/match/setup?step=2');
         setStep(2);
     };
 
     const handleBack = () => {
         setDirection(-1);
-        router.replace('/match/setup');
         setStep(1);
     };
 

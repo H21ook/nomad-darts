@@ -24,21 +24,6 @@ export default function MatchPage() {
     const currentPlayerIndex = match.active?.playerIndex ?? 0;
     const canUndo = useAppSelector(selectCanUndo);
 
-    // Hardware/gesture back button-г interceptor хийх
-    useEffect(() => {
-        // Dummy history entry нэмж back button-г барих боломжтой болгоно
-        window.history.pushState({ match: true }, '');
-
-        const handlePopState = () => {
-            setShowExitDialog(true);
-            // Dialog-г хаасан ч дахин back дарах боломжтой байх
-            window.history.pushState({ match: true }, '');
-        };
-
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
-
     const prevStatusRef = useRef(match.status);
 
     useEffect(() => {
@@ -85,6 +70,7 @@ export default function MatchPage() {
                         dispatch(submitTurn({ score, dartsUsed, isBust }))
                     }
                     currentScore={match.players[currentPlayerIndex].score}
+                    checkout={match.settings.checkout}
                     onUndo={() => dispatch(undo())}
                     canUndo={canUndo}
                 />

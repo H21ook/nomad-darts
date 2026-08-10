@@ -7,10 +7,13 @@ export function cn(...inputs: ClassValue[]) {
 
 const bogieNumbers = [169, 168, 166, 165, 163, 162, 159];
 
-export const checkFinishablePoint = (currentScore: number) => {
+export const checkFinishablePoint = (
+  currentScore: number,
+  checkout: 'double' | 'straight' = 'double'
+) => {
   return (
     currentScore <= 170 &&
-    currentScore >= 2 &&
+    currentScore >= (checkout === 'double' ? 2 : 1) &&
     !bogieNumbers.includes(currentScore)
   );
 };
