@@ -6,15 +6,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 const bogieNumbers = [169, 168, 166, 165, 163, 162, 159];
+// Math-verified set of scores unreachable in 3 darts in straight-out checkout, domain [1, 180].
+const straightBogies = [163, 166, 169, 172, 173, 175, 176, 178, 179];
 
 export const checkFinishablePoint = (
   currentScore: number,
   checkout: 'double' | 'straight' = 'double'
 ) => {
+  const maxScore = checkout === 'double' ? 170 : 180;
+  const minScore = checkout === 'double' ? 2 : 1;
+  const bogies = checkout === 'double' ? bogieNumbers : straightBogies;
   return (
-    currentScore <= 170 &&
-    currentScore >= (checkout === 'double' ? 2 : 1) &&
-    !bogieNumbers.includes(currentScore)
+    currentScore <= maxScore &&
+    currentScore >= minScore &&
+    !bogies.includes(currentScore)
   );
 };
 
