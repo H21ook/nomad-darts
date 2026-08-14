@@ -1640,3 +1640,782 @@ describe("value edges", () => {
     expect(state.players[0].score).toBe(506);
   });
 });
+
+// [13] G1: Bogie exact-score behavior snapshot. The reducer has NO finishability
+//     guard: any throw equal to the remaining score wins the leg, even for bogie
+//     scores like 169 (not a finishable checkout with 3 darts). This is why the
+//     NumberPad blocks exact-score entry for non-finishable scores — the UI
+//     enforces it, the reducer deliberately does not (UI-only enforcement).
+describe("G1 — bogie exact-score behavior snapshot", () => {
+  it("wins the leg from remaining 169 in double mode (bogie score, no finishability guard)", () => {
+    let state = startPlaying();
+    state = matchReducer(state, submitTurn({ score: 332, dartsUsed: 3 })); // p1 → 169
+    expect(state.players[0].score).toBe(169);
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p2
+    state = matchReducer(state, submitTurn({ score: 169, dartsUsed: 3 })); // p1 finishes
+
+    expect(state.status).toBe("leg_finished");
+    expect(state.lastLegWinnerId).toBe("p1");
+    expect(state.winnerId).toBeNull(); // firstToLegs 3 → not match_finished
+    expect(state.players[0].score).toBe(0);
+    // Intended UI-only enforcement: the NumberPad blocks exact-score entry for
+    // non-finishable (bogie) scores like 169; the reducer accepts them.
+  });
+
+  it("checks out exactly from remaining 170 (T20+T20+Bull path conceptually)", () => {
+    let state = startPlaying();
+    state = matchReducer(state, submitTurn({ score: 331, dartsUsed: 3 })); // p1 → 170
+    expect(state.players[0].score).toBe(170);
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p2
+    state = matchReducer(state, submitTurn({ score: 170, dartsUsed: 3 })); // p1 checks out
+
+    expect(state.status).toBe("leg_finished");
+    expect(state.lastLegWinnerId).toBe("p1");
+    expect(state.active!.currentLeg.turns[2].points).toBe(170);
+    expect(state.players[0].totalDartsThrown).toBe(6); // 3 + 3
+  });
+
+  it("records full turn fields on the bogie 169 exact-score finish", () => {
+    let state = startPlaying();
+    state = matchReducer(state, submitTurn({ score: 332, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 169, dartsUsed: 2 }));
+
+    const turn = state.active!.currentLeg.turns[2];
+    expect(turn.playerId).toBe("p1");
+    expect(turn.points).toBe(169);
+    expect(turn.isBust).toBe(false);
+    expect(turn.dartsUsed).toBe(2);
+    expect(turn.remainingScore).toBe(0);
+    expect(state.players[0].totalDartsThrown).toBe(5); // 3 + 2
+  });
+
+  it("lets a non-starter win the leg with an exact bogie score", () => {
+    let state = startPlaying();
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p1
+    state = matchReducer(state, submitTurn({ score: 332, dartsUsed: 3 })); // p2 → 169
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p1
+    state = matchReducer(state, submitTurn({ score: 169, dartsUsed: 3 })); // p2 finishes
+
+    expect(state.status).toBe("leg_finished");
+    expect(state.lastLegWinnerId).toBe("p2");
+    expect(state.players[1].score).toBe(0);
+  });
+
+  it("reaches match_finished via a bogie exact finish on the second leg win", () => {
+    let state = startPlaying({ firstToLegs: 2 });
+    // Leg 1: p1 wins with a bogie 169 finish
+    state = matchReducer(state, submitTurn({ score: 332, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 169, dartsUsed: 3 }));
+    expect(state.status).toBe("leg_finished");
+    state = matchReducer(state, startNextLeg());
+    // Leg 2: p2 busts, then p1 wins again with 169 → firstToLegs 2
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 332, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 169, dartsUsed: 3 }));
+
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe("p1");
+    expect(state.players[0].legsWon).toBe(2);
+  });
+
+  it("wins from a bogie 169 with straight checkout too (checkout mode does not gate finishes)", () => {
+    let state = startPlaying({ checkout: "straight" });
+    state = matchReducer(state, submitTurn({ score: 332, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 169, dartsUsed: 3 }));
+
+    expect(state.status).toBe("leg_finished");
+    expect(state.lastLegWinnerId).toBe("p1");
+    expect(state.active!.currentLeg.turns[2].isBust).toBe(false);
+  });
+});
+
+// [14] G2: Snapshot cap rollover — takeSnapshotState keeps the 20 most recent
+//     snapshots and drops the OLDEST (shift after push).
+describe("G2 — snapshot cap rollover", () => {
+  // Deep-compare helper that ignores the snapshot stack (undo pops it by design).
+  const withoutSnapshots = (state: MatchState): MatchState => {
+    const clone: MatchState = JSON.parse(JSON.stringify(state));
+    clone.snapshots = [];
+    return clone;
+  };
+
+  it("rolls the 20-snapshot cap over by dropping the oldest snapshot", () => {
+    let state = startPlaying();
+    const preFirstSubmit = withoutSnapshots(state);
+    state = matchReducer(state, submitTurn({ score: 1, dartsUsed: 1 }));
+    const postFirstSubmit = withoutSnapshots(state);
+
+    for (let i = 1; i < 21; i++) {
+      state = matchReducer(state, submitTurn({ score: 1, dartsUsed: 1 }));
+    }
+    expect(state.snapshots).toHaveLength(20);
+    expect(selectCanUndo(asRootState(state))).toBe(true);
+
+    // The pre-first-submit state was the OLDEST snapshot and was dropped by the
+    // cap, so the deepest undo restores the state AFTER the 1st submit, not before.
+    for (let i = 0; i < 20; i++) {
+      state = matchReducer(state, undo());
+    }
+    expect(state.snapshots).toHaveLength(0);
+    expect(selectCanUndo(asRootState(state))).toBe(false);
+    expect(withoutSnapshots(state)).toEqual(postFirstSubmit);
+    expect(withoutSnapshots(state)).not.toEqual(preFirstSubmit);
+  });
+
+  it("is a no-op on the 21st undo once the rollover window is fully unwound", () => {
+    let state = startPlaying();
+    for (let i = 0; i < 21; i++) {
+      state = matchReducer(state, submitTurn({ score: 1, dartsUsed: 1 }));
+    }
+    for (let i = 0; i < 20; i++) {
+      state = matchReducer(state, undo());
+    }
+    expect(state.snapshots).toHaveLength(0);
+
+    const before = JSON.parse(JSON.stringify(state));
+    state = matchReducer(state, undo());
+    expect(JSON.parse(JSON.stringify(state))).toEqual(before);
+    expect(selectCanUndo(asRootState(state))).toBe(false);
+  });
+
+  it("keeps exactly 20 snapshots through 30 submits", () => {
+    let state = startPlaying();
+    for (let i = 0; i < 30; i++) {
+      state = matchReducer(state, submitTurn({ score: 1, dartsUsed: 1 }));
+    }
+
+    expect(state.snapshots).toHaveLength(20);
+    expect(selectCanUndo(asRootState(state))).toBe(true);
+    expect(state.players.map((p) => p.score)).toEqual([486, 486]); // 15 turns each
+    expect(state.active!.currentLeg.turns).toHaveLength(30);
+  });
+
+  it("rolls the cap over across a leg boundary (startNextLeg snapshots count too)", () => {
+    let state = startPlaying({ firstToLegs: 2 });
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // leg 1 win
+    state = matchReducer(state, startNextLeg());
+    const afterBoundary = withoutSnapshots(state);
+    expect(state.active!.playerIndex).toBe(1);
+
+    for (let i = 0; i < 20; i++) {
+      state = matchReducer(state, submitTurn({ score: 1, dartsUsed: 1 }));
+    }
+    // 22 actions total (2 + 20) → capped to the 20 most recent
+    expect(state.snapshots).toHaveLength(20);
+
+    for (let i = 0; i < 20; i++) {
+      state = matchReducer(state, undo());
+    }
+    // The two pre-boundary snapshots were dropped: the deepest restore is the
+    // post-startNextLeg state, so undo still walks the full boundary.
+    expect(withoutSnapshots(state)).toEqual(afterBoundary);
+    expect(state.status).toBe("playing");
+    expect(state.active!.playerIndex).toBe(1);
+  });
+
+  it("leaves the first submit on the board after rollover + full undo (oldest action not undoable)", () => {
+    let state = startPlaying();
+    for (let i = 0; i < 21; i++) {
+      state = matchReducer(state, submitTurn({ score: 1, dartsUsed: 1 }));
+    }
+    for (let i = 0; i < 20; i++) {
+      state = matchReducer(state, undo());
+    }
+
+    expect(state.active!.currentLeg.turns).toHaveLength(1);
+    expect(state.active!.currentLeg.turns[0].points).toBe(1);
+    expect(state.snapshots).toHaveLength(0);
+  });
+});
+
+// [15] G3: Undo chains across leg/set boundaries in sets-enabled matches
+describe("G3 — undo chains across set boundaries", () => {
+  it("walks a 3-undo chain back through a set boundary to mid-leg", () => {
+    let state = startPlaying({ setsEnabled: true, firstToLegs: 2, firstToSets: 2 });
+    // Set 1, leg 1: p1 wins
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    state = matchReducer(state, startNextLeg());
+    // Set 1, leg 2: p2 busts, p1 wins → p1 legsWon 2 → set 1 finished (setsWon 1)
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    expect(state.players[0].setsWon).toBe(1);
+    expect(state.history.completedSets).toHaveLength(1);
+    expect(state.status).toBe("leg_finished"); // not match over until setsWon 2
+
+    // Set 2 starts with p2
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.playerIndex).toBe(1);
+    // Set 2, leg 1: p2 wins
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    expect(state.status).toBe("leg_finished");
+
+    // Undo 1 → playing mid-set-2-leg-1 (the startNextLeg snapshot was restored)
+    state = matchReducer(state, undo());
+    expect(state.status).toBe("playing");
+    expect(state.active!.playerIndex).toBe(1);
+    expect(state.players.every((p) => p.score === 501)).toBe(true);
+    expect(state.players[0].setsWon).toBe(1);
+    expect(state.history.completedSets).toHaveLength(1);
+    expect(state.players.every((p) => p.legsWon === 0)).toBe(true); // set-2 legs reset
+
+    // Undo 2 → leg_finished after set 1 (boundary state, completedSets intact)
+    state = matchReducer(state, undo());
+    expect(state.status).toBe("leg_finished");
+    expect(state.lastLegWinnerId).toBe("p1");
+    expect(state.players[0].legsWon).toBe(2);
+    expect(state.players[0].setsWon).toBe(1);
+    expect(state.history.completedSets).toHaveLength(1);
+
+    // Undo 3 → mid-leg-2 of set 1: undoing before the set-finishing leg
+    // removes that set from history.completedSets
+    state = matchReducer(state, undo());
+    expect(state.status).toBe("playing");
+    expect(state.history.completedSets).toHaveLength(0);
+    expect(state.players[0].setsWon).toBe(0);
+    expect(state.players[0].legsWon).toBe(1);
+    expect(state.players[1].legsWon).toBe(0);
+    expect(state.active!.playerIndex).toBe(0); // p1's turn in leg 2 of set 1
+    expect(state.players[0].score).toBe(501);
+  });
+
+  it("restores playing state and clears the winner after undoing a sets-enabled match finish", () => {
+    let state = startPlaying({ setsEnabled: true, firstToLegs: 1, firstToSets: 1 });
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe("p1");
+    expect(state.history.completedSets).toHaveLength(1);
+
+    state = matchReducer(state, undo());
+
+    expect(state.status).toBe("playing");
+    expect(state.winnerId).toBeNull();
+    expect(state.players[0].setsWon).toBe(0);
+    expect(state.history.completedSets).toHaveLength(0);
+    expect(state.players[0].score).toBe(501);
+  });
+
+  it("lets the other player win after undoing a sets-enabled match finish", () => {
+    let state = startPlaying({ setsEnabled: true, firstToLegs: 1, firstToSets: 1 });
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    state = matchReducer(state, undo());
+    expect(state.status).toBe("playing");
+
+    // p2 (not p1) checks out instead → p2 wins the set and the match
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 }));
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe("p2");
+    expect(state.players[1].setsWon).toBe(1);
+    expect(state.history.completedSets).toHaveLength(1);
+  });
+
+  it("unwinds the full set-bounded chain back to the initial playing state", () => {
+    let state = startPlaying({ setsEnabled: true, firstToLegs: 2, firstToSets: 2 });
+    // Leg 1: p1 wins → startNextLeg → leg 2: p2 busts, p1 wins → set 1
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    // startNextLeg into set 2 → leg 1 of set 2: p2 wins
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+
+    // 6 snapshots were taken (4 submits + 2 startNextLegs) → 6 undos unwind all
+    expect(state.snapshots).toHaveLength(6);
+    for (let i = 0; i < 6; i++) {
+      state = matchReducer(state, undo());
+    }
+    expect(state.snapshots).toHaveLength(0);
+    expect(state.status).toBe("playing");
+    expect(state.active!.playerIndex).toBe(0);
+    expect(state.players.every((p) => p.score === 501)).toBe(true);
+    expect(state.players.every((p) => p.legsWon === 0 && p.setsWon === 0)).toBe(true);
+    expect(state.history.completedSets).toHaveLength(0);
+
+    // 7th undo: no-op
+    const before = JSON.parse(JSON.stringify(state));
+    state = matchReducer(state, undo());
+    expect(JSON.parse(JSON.stringify(state))).toEqual(before);
+  });
+
+  it("restores lastLegWinnerId correctly at each step of the chain", () => {
+    let state = startPlaying({ setsEnabled: true, firstToLegs: 2, firstToSets: 2 });
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // leg 1: p1
+    expect(state.lastLegWinnerId).toBe("p1");
+    state = matchReducer(state, startNextLeg());
+    expect(state.lastLegWinnerId).toBeNull();
+    state = matchReducer(state, submitTurn({ score: 600 })); // p2 bust
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // leg 2: p1 → set 1
+    expect(state.lastLegWinnerId).toBe("p1");
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // set 2 leg 1: p2
+
+    // Undo 1 → mid set-2-leg-1: startNextLeg cleared the winner id
+    state = matchReducer(state, undo());
+    expect(state.lastLegWinnerId).toBeNull();
+    // Undo 2 → leg_finished after set 1: p1 is the last leg winner
+    state = matchReducer(state, undo());
+    expect(state.lastLegWinnerId).toBe("p1");
+    // Undo 3 → mid leg 2 of set 1: lastLegWinnerId is null until a leg finishes
+    state = matchReducer(state, undo());
+    expect(state.lastLegWinnerId).toBeNull();
+    expect(state.status).toBe("playing");
+  });
+
+  it("walks back two undos from a sets-enabled match_finished (firstToLegs 2, firstToSets 1)", () => {
+    let state = startPlaying({ setsEnabled: true, firstToLegs: 2, firstToSets: 1 });
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // leg 1: p1
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // leg 2: p2
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // leg 3: p1 → set → match
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe("p1");
+    expect(state.history.completedSets).toHaveLength(1);
+
+    state = matchReducer(state, undo());
+    expect(state.status).toBe("playing");
+    expect(state.history.completedSets).toHaveLength(0);
+    expect(state.players[0].legsWon).toBe(1);
+    expect(state.players[1].legsWon).toBe(1);
+    expect(state.active!.playerIndex).toBe(0); // p1 about to throw leg 3
+
+    state = matchReducer(state, undo());
+    expect(state.status).toBe("leg_finished");
+    expect(state.lastLegWinnerId).toBe("p2");
+    expect(state.players[1].legsWon).toBe(1);
+    expect(state.history.completedSets).toHaveLength(0);
+  });
+});
+
+// [16] G4: 3p/4p set rotation matrix — set starters follow completedSetsCount % N
+describe("G4 — 3p/4p set rotation matrix", () => {
+  it("rotates set starters 0→1→2 across three sets (3 players, firstToLegs 2)", () => {
+    let state = startPlaying(
+      { setsEnabled: true, firstToLegs: 2, firstToSets: 3 },
+      threePlayers
+    );
+    // Set 1: leg 1 starts player 0
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(0);
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // p1 wins leg 1
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(1);
+
+    // Set 1, leg 2: p2 and p3 bust, p1 wins → set 1 to p1 (completedSetsCount 1)
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    expect(state.history.completedSets).toHaveLength(1);
+
+    // Set 2 starts player 1 (completedSetsCount 1 % 3)
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(1);
+
+    // Within set 2: leg 2 starts player 2 ((1 + 1) % 3)
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // p2 wins
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(2);
+
+    // Within set 2: leg 3 starts player 0 ((1 + 2) % 3)
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // p3 wins
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(0);
+
+    // Within set 2: leg 4 wraps back to the set starter ((1 + 3) % 3 = 1)
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // p1 wins
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(1);
+
+    // Leg 4 winner p2 → set 2 to p2 (completedSetsCount 2) → set 3 starts player 2
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    expect(state.history.completedSets).toHaveLength(2);
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(2); // 2 % 3
+    expect(state.active!.playerIndex).toBe(2);
+  });
+
+  it("rotates 4 players across sets: set 1 starts P0, set 2 starts P1, match ends in set 3", () => {
+    let state = startPlaying(
+      { setsEnabled: true, firstToLegs: 1, firstToSets: 2 },
+      fourPlayers
+    );
+    // Set 1: first leg starts P0
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(0);
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // P0 wins set 1
+    state = matchReducer(state, startNextLeg());
+    // Set 2: first leg starts P1 (completedSetsCount 1 % 4)
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(1);
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // P1 wins set 2
+
+    // Set 3 starts P2; P2, P3, P0 bust so P1 can take set 3 → firstToSets 2
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(2);
+    state = matchReducer(state, submitTurn({ score: 600 })); // P2 bust
+    state = matchReducer(state, submitTurn({ score: 600 })); // P3 bust
+    state = matchReducer(state, submitTurn({ score: 600 })); // P0 bust
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // P1 wins set 3
+
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe("p2"); // Bob (index 1)
+    expect(state.players[1].setsWon).toBe(2);
+    expect(state.history.completedSets).toHaveLength(3);
+  });
+
+  it("wraps 4-player set rotation back to P0 at set 5 (completedSetsCount % 4)", () => {
+    let state = startPlaying(
+      { setsEnabled: true, firstToLegs: 1, firstToSets: 5 },
+      fourPlayers
+    );
+    const starters: number[] = [state.active!.currentLeg.startPlayerIndex];
+    for (let i = 0; i < 4; i++) {
+      state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+      state = matchReducer(state, startNextLeg());
+      starters.push(state.active!.currentLeg.startPlayerIndex);
+    }
+    // Sets 1-4 were won by starters P0..P3 → set 5 wraps to P0
+    expect(starters).toEqual([0, 1, 2, 3, 0]);
+    expect(state.players.map((p) => p.setsWon)).toEqual([1, 1, 1, 1]);
+  });
+
+  it("rotates within-set leg starters around 4 players (1,2,3,0) and finishes set 1 on the 5th leg", () => {
+    let state = startPlaying(
+      { setsEnabled: true, firstToLegs: 2, firstToSets: 2 },
+      fourPlayers
+    );
+    // Set 1: legs 1-4 won by starters P0..P3; leg 5 wraps to P0 who wins set 1
+    const legStarters: number[] = [state.active!.currentLeg.startPlayerIndex];
+    for (let i = 0; i < 4; i++) {
+      state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+      state = matchReducer(state, startNextLeg());
+      legStarters.push(state.active!.currentLeg.startPlayerIndex);
+    }
+    expect(legStarters).toEqual([0, 1, 2, 3, 0]);
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // P0 wins leg 5 → set 1
+    expect(state.players[0].setsWon).toBe(1);
+    expect(state.history.completedSets).toHaveLength(1);
+    state = matchReducer(state, startNextLeg());
+    // Set 2 starts P1 and its legs rotate 1,2,3,0
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(1);
+    const set2Starters: number[] = [state.active!.currentLeg.startPlayerIndex];
+    for (let i = 0; i < 3; i++) {
+      state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+      state = matchReducer(state, startNextLeg());
+      set2Starters.push(state.active!.currentLeg.startPlayerIndex);
+    }
+    expect(set2Starters).toEqual([1, 2, 3, 0]);
+  });
+
+  it("wraps 3-player set rotation back to P0 at set 4 (completedSetsCount % 3)", () => {
+    let state = startPlaying(
+      { setsEnabled: true, firstToLegs: 1, firstToSets: 4 },
+      threePlayers
+    );
+    const starters: number[] = [state.active!.currentLeg.startPlayerIndex];
+    for (let i = 0; i < 3; i++) {
+      state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+      state = matchReducer(state, startNextLeg());
+      starters.push(state.active!.currentLeg.startPlayerIndex);
+    }
+    expect(starters).toEqual([0, 1, 2, 0]);
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // P0 wins set 4
+    expect(state.players[0].setsWon).toBe(2);
+    state = matchReducer(state, startNextLeg());
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(1); // 4 % 3
+  });
+});
+
+// [17] G5: Rematch semantics — settings kept, order preserved, winner+1 start
+describe("G5 — rematch semantics (sets + order)", () => {
+  it("keeps settings and player order after a sets-enabled rematch (no reshuffle)", () => {
+    let state = startPlaying(
+      { setsEnabled: true, firstToLegs: 2, firstToSets: 2, randomOrder: true },
+      threePlayers
+    );
+    const orderBefore = state.players.map((p) => p.id);
+    // The current first player (s0) wins every leg; everyone else busts.
+    // Set 1: leg 1 s0 wins; leg 2 s1, s2 bust → s0 wins → s0 setsWon 1
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    // Set 2: leg 1 s1, s2 bust → s0 wins; leg 2 s2 busts → s0 wins → setsWon 2
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    state = matchReducer(state, startNextLeg());
+    state = matchReducer(state, submitTurn({ score: 600 }));
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe(state.players[0].id);
+
+    state = matchReducer(state, rematch());
+
+    // Settings kept verbatim (setsEnabled, firstToLegs, firstToSets, startingScore, checkout)
+    expect(state.settings).toEqual({
+      startingScore: 501,
+      firstToLegs: 2,
+      firstToSets: 2,
+      setsEnabled: true,
+      checkout: "double",
+      randomOrder: true,
+    });
+    // Behavior snapshot: rematch does NOT reshuffle — even with randomOrder true
+    // the order is preserved; startMatch would have shuffled it.
+    expect(state.players.map((p) => p.id)).toEqual(orderBefore);
+    expect(state.players.map((p) => p.order)).toEqual([1, 2, 3]);
+    // startPlayerIndex = (winnerIndex + 1) % N → winner was index 0
+    expect(state.active!.playerIndex).toBe(1);
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(1);
+    expect(state.players.every((p) => p.score === 501)).toBe(true);
+    expect(state.players.every((p) => p.legsWon === 0 && p.setsWon === 0)).toBe(true);
+    expect(state.history.completedSets).toEqual([]);
+    expect(state.snapshots).toEqual([]);
+  });
+
+  it("preserves player colors across rematch", () => {
+    let state = startPlaying({ firstToLegs: 1 }, threePlayers);
+    const colorsBefore = state.players.map((p) => p.color);
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    state = matchReducer(state, rematch());
+
+    expect(state.players.map((p) => p.color)).toEqual(colorsBefore);
+  });
+
+  it("undo is a no-op after a rematch cleared the snapshots (sets-enabled)", () => {
+    let state = startPlaying({ setsEnabled: true, firstToLegs: 1, firstToSets: 1 });
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
+    expect(state.status).toBe("match_finished");
+    state = matchReducer(state, rematch());
+    expect(state.snapshots).toEqual([]);
+
+    const before = JSON.parse(JSON.stringify(state));
+    state = matchReducer(state, undo());
+    expect(JSON.parse(JSON.stringify(state))).toEqual(before);
+    expect(state.status).toBe("playing");
+    expect(state.active!.playerIndex).toBe(1); // winner+1 preserved
+    expect(selectCanUndo(asRootState(state))).toBe(false);
+  });
+
+  it("rematch immediately after startMatch with no turns starts at player 0", () => {
+    let state = startPlaying({}, threePlayers);
+    state = matchReducer(state, rematch());
+
+    expect(state.status).toBe("playing");
+    expect(state.winnerId).toBeNull();
+    expect(state.active!.playerIndex).toBe(0);
+    expect(state.active!.currentLeg.startPlayerIndex).toBe(0);
+    expect(state.snapshots).toEqual([]);
+    expect(state.history.completedSets).toEqual([]);
+  });
+
+  it("resets all per-player match stats on rematch", () => {
+    let state = startPlaying({ firstToLegs: 1 }, threePlayers);
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p1
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p2
+    state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 })); // p3 wins
+    expect(state.players[2].totalPointsScored).toBe(501);
+
+    state = matchReducer(state, rematch());
+
+    expect(state.players.every((p) => p.score === 501)).toBe(true);
+    expect(state.players.every((p) => p.legsWon === 0 && p.setsWon === 0)).toBe(true);
+    expect(state.players.every((p) => p.totalDartsThrown === 0)).toBe(true);
+    expect(state.players.every((p) => p.totalPointsScored === 0)).toBe(true);
+    expect(state.active!.playerIndex).toBe(0); // winner was index 2 → (2 + 1) % 3
+  });
+
+  it("keeps custom startingScore and checkout across a rematch", () => {
+    let state = startPlaying({
+      startingScore: 301,
+      firstToLegs: 1,
+      checkout: "straight",
+    });
+    state = matchReducer(state, submitTurn({ score: 301, dartsUsed: 3 }));
+    expect(state.status).toBe("match_finished");
+
+    state = matchReducer(state, rematch());
+
+    expect(state.settings).toEqual({
+      startingScore: 301,
+      firstToLegs: 1,
+      firstToSets: 1,
+      setsEnabled: false,
+      checkout: "straight",
+      randomOrder: false,
+    });
+    expect(state.players.every((p) => p.score === 301)).toBe(true);
+    expect(state.active!.playerIndex).toBe(1);
+  });
+});
+
+// [18] G6: dartsUsed edges — values are stored verbatim, NOT clamped by the reducer
+describe("G6 — dartsUsed edges", () => {
+  it("accepts dartsUsed 4 without clamping (behavior snapshot)", () => {
+    // Behavior snapshot: the reducer stores dartsUsed verbatim; values above 3
+    // are accepted and added to totalDartsThrown. The UI is expected to cap input.
+    const state = matchReducer(startPlaying(), submitTurn({ score: 60, dartsUsed: 4 }));
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.dartsUsed).toBe(4);
+    expect(state.players[0].totalDartsThrown).toBe(4);
+  });
+
+  it("accepts an explicit dartsUsed of 0 on a normal hit", () => {
+    const state = matchReducer(startPlaying(), submitTurn({ score: 60, dartsUsed: 0 }));
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.dartsUsed).toBe(0);
+    expect(turn.points).toBe(60);
+    expect(state.players[0].totalDartsThrown).toBe(0);
+    expect(state.players[0].score).toBe(441);
+    expect(state.active!.currentLeg.turns).toHaveLength(1); // turn recorded
+  });
+
+  it("forces 3 darts on a bust even with dartsUsed 1 passed explicitly", () => {
+    const state = matchReducer(
+      startPlaying(),
+      submitTurn({ score: 60, isBust: true, dartsUsed: 1 })
+    );
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.isBust).toBe(true);
+    expect(turn.dartsUsed).toBe(3); // bust always counts 3 darts
+    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(state.players[0].score).toBe(501); // unchanged
+  });
+
+  it("forces 3 darts on a bust even with dartsUsed 4 (bust overrides unclamped values)", () => {
+    const state = matchReducer(startPlaying(), submitTurn({ score: 600, dartsUsed: 4 }));
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.isBust).toBe(true);
+    expect(turn.dartsUsed).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(3);
+  });
+
+  it("accepts a negative dartsUsed without clamping (behavior snapshot)", () => {
+    // Behavior snapshot, mirroring the negative-score acceptance: dartsUsed is
+    // summed verbatim, so -1 decrements totalDartsThrown.
+    const state = matchReducer(startPlaying(), submitTurn({ score: 60, dartsUsed: -1 }));
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.dartsUsed).toBe(-1);
+    expect(state.players[0].totalDartsThrown).toBe(-1);
+  });
+
+  it("does not clamp dartsUsed on an exact checkout either (dartsUsed 4 wins the leg)", () => {
+    const state = matchReducer(startPlaying(), submitTurn({ score: 501, dartsUsed: 4 }));
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(state.status).toBe("leg_finished");
+    expect(turn.dartsUsed).toBe(4);
+    expect(state.players[0].totalDartsThrown).toBe(4);
+  });
+
+  it("forces 3 darts on a bust with an explicit dartsUsed of 0", () => {
+    const state = matchReducer(startPlaying(), submitTurn({ score: 600, dartsUsed: 0 }));
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.isBust).toBe(true);
+    expect(turn.dartsUsed).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(3);
+  });
+});
+
+// [19] G7: Value edges — non-501 starting scores and explicit bust on exact score
+describe("G7 — value edges (301 start, explicit bust)", () => {
+  it("starts a 301 match with scores at 301 and decrements on a normal hit", () => {
+    let state = startPlaying({ startingScore: 301 });
+    expect(state.players.every((p) => p.score === 301)).toBe(true);
+
+    state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 }));
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.isBust).toBe(false);
+    expect(turn.points).toBe(60);
+    expect(turn.remainingScore).toBe(241);
+    expect(state.players[0].score).toBe(241);
+  });
+
+  it("wins the leg on an exact 301 finish and resets scores to 301 for the next leg", () => {
+    let state = startPlaying({ startingScore: 301 });
+    state = matchReducer(state, submitTurn({ score: 301, dartsUsed: 3 }));
+
+    expect(state.status).toBe("leg_finished");
+    expect(state.lastLegWinnerId).toBe("p1");
+    expect(state.players[0].score).toBe(0);
+
+    state = matchReducer(state, startNextLeg());
+    expect(state.status).toBe("playing");
+    expect(state.players.every((p) => p.score === 301)).toBe(true);
+    expect(state.active!.currentLeg.startScore).toBe(301);
+    expect(state.active!.playerIndex).toBe(1);
+  });
+
+  it("treats the exact current score with isBust true as a bust (score unchanged)", () => {
+    // Behavior snapshot: without the explicit bust flag, 501 would finish the
+    // leg (remaining 0); the explicit flag overrides the checkout.
+    const state = matchReducer(
+      startPlaying(),
+      submitTurn({ score: 501, isBust: true })
+    );
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(turn.isBust).toBe(true);
+    expect(turn.points).toBe(0);
+    expect(turn.dartsUsed).toBe(3);
+    expect(turn.remainingScore).toBe(501); // stays current
+    expect(state.players[0].score).toBe(501); // unchanged
+    expect(state.status).toBe("playing");
+    expect(state.active!.playerIndex).toBe(1);
+  });
+
+  it("ends the match on an exact 301 finish with firstToLegs 1", () => {
+    const state = matchReducer(
+      startPlaying({ startingScore: 301, firstToLegs: 1 }),
+      submitTurn({ score: 301, dartsUsed: 3 })
+    );
+
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe("p1");
+    expect(state.players[0].score).toBe(0);
+  });
+
+  it("finishes a sets-enabled 301 match via sets", () => {
+    const state = matchReducer(
+      startPlaying({
+        startingScore: 301,
+        setsEnabled: true,
+        firstToLegs: 1,
+        firstToSets: 1,
+      }),
+      submitTurn({ score: 301, dartsUsed: 3 })
+    );
+
+    expect(state.status).toBe("match_finished");
+    expect(state.winnerId).toBe("p1");
+    expect(state.players[0].setsWon).toBe(1);
+    expect(state.history.completedSets).toHaveLength(1);
+  });
+
+  it("records the passed dartsUsed on an exact 301 finish", () => {
+    const state = matchReducer(
+      startPlaying({ startingScore: 301 }),
+      submitTurn({ score: 301, dartsUsed: 2 })
+    );
+    const turn = state.active!.currentLeg.turns[0];
+
+    expect(state.status).toBe("leg_finished");
+    expect(turn.points).toBe(301);
+    expect(turn.remainingScore).toBe(0);
+    expect(turn.dartsUsed).toBe(2);
+    expect(state.players[0].totalDartsThrown).toBe(2);
+  });
+});

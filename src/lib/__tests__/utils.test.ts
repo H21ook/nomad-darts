@@ -62,6 +62,31 @@ describe("checkFinishablePoint", () => {
     expect(checkFinishablePoint(170, "double")).toBe(true);
     expect(checkFinishablePoint(2, "double")).toBe(true);
   });
+
+  it("straight-out: double-out bogeys that are reachable in 3 darts", () => {
+    for (const score of [168, 165, 162, 159]) {
+      expect(checkFinishablePoint(score, "straight")).toBe(true);
+    }
+  });
+
+  it("straight-out: rejects the true straight-out bogey numbers", () => {
+    for (const bogie of [163, 166, 169, 172, 173, 175, 176, 178, 179]) {
+      expect(checkFinishablePoint(bogie, "straight")).toBe(false);
+    }
+  });
+
+  it("straight-out: allows scores above the 170 double-out max", () => {
+    expect(checkFinishablePoint(171, "straight")).toBe(true);
+    expect(checkFinishablePoint(174, "straight")).toBe(true);
+    expect(checkFinishablePoint(177, "straight")).toBe(true);
+    expect(checkFinishablePoint(180, "straight")).toBe(true);
+    expect(checkFinishablePoint(181, "straight")).toBe(false);
+  });
+
+  it("double-out: rejects the double-out bogeys above 170 reachable straight-out", () => {
+    expect(checkFinishablePoint(171, "double")).toBe(false);
+    expect(checkFinishablePoint(168, "double")).toBe(false);
+  });
 });
 
 describe("PLAYER_COLORS", () => {
