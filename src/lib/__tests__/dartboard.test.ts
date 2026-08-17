@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   SEGMENT_ORDER, canApplyMultiplier, scoreDart,
   bullZoneFromRadius, segmentFromAngleDeg,
-  R_INNER_BULL, R_OUTER_BULL, R_TRIPLE_IN, R_TRIPLE_OUT, R_DOUBLE_IN,
+  R_INNER_BULL, R_OUTER_BULL, R_TRIPLE_IN,
 } from '@/lib/dartboard';
 
 describe('segmentFromAngleDeg', () => {
