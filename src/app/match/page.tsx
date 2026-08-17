@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { selectCanUndo, submitTurn, undo, abandonMatch } from '@/lib/redux/matchSlice';
 import { ScoreBoard } from '@/components/scoring/ScoreBoard';
-import { NumberPad } from '@/components/scoring/NumberPad';
+import ScoreInputPanel from '@/components/scoring/ScoreInputPanel';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LegTransition } from '@/components/scoring/LegTransition';
@@ -65,7 +65,7 @@ export default function MatchPage() {
                     active={match.active!}
                 />
 
-                <NumberPad
+                <ScoreInputPanel
                     onSubmit={(score, dartsUsed, isBust) =>
                         dispatch(submitTurn({ score, dartsUsed, isBust }))
                     }
