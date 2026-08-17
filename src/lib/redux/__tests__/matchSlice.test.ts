@@ -123,10 +123,10 @@ describe("submitTurn — bust semantics", () => {
     const turn = state.active!.currentLeg.turns[0];
     expect(turn.isBust).toBe(true);
     expect(turn.points).toBe(0);
-    expect(turn.dartsUsed).toBe(3);
+    expect(turn.dartsUsed).toBe(0); // dartsUsed omitted → 0 on a bust too
     expect(turn.remainingScore).toBe(501);
     expect(state.players[0].score).toBe(501); // unchanged
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(0);
     expect(state.active!.playerIndex).toBe(1); // next player
     expect(state.status).toBe("playing");
   });
@@ -184,12 +184,12 @@ describe("submitTurn — darts-used tracking", () => {
     }
   });
 
-  it("counts 3 darts for a bust regardless of dartsUsed", () => {
+  it("counts the actual dartsUsed for a bust", () => {
     const state = matchReducer(
       startPlaying(),
       submitTurn({ score: 600, dartsUsed: 1 })
     );
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(1);
   });
 
   it("adds 0 darts when dartsUsed is omitted (current reducer behavior)", () => {
@@ -304,7 +304,7 @@ describe("undo", () => {
   it("restores score and player index after a bust", () => {
     let state = startPlaying();
     state = matchReducer(state, submitTurn({ score: 600 }));
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(0); // dartsUsed omitted → 0
 
     state = matchReducer(state, undo());
     expect(state.players[0].totalDartsThrown).toBe(0);
@@ -636,7 +636,7 @@ describe("submitTurn — auto-bust edges", () => {
 
     const turn = state.active!.currentLeg.turns[2];
     expect(turn.isBust).toBe(true);
-    expect(turn.dartsUsed).toBe(3); // bust always counts 3 darts
+    expect(turn.dartsUsed).toBe(1); // actual darts thrown on the bust
     expect(state.players[0].score).toBe(2); // unchanged
     expect(state.active!.playerIndex).toBe(1);
   });
@@ -663,8 +663,8 @@ describe("submitTurn — auto-bust edges", () => {
     const turn = state.active!.currentLeg.turns[0];
 
     expect(turn.isBust).toBe(true);
-    expect(turn.dartsUsed).toBe(3);
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(turn.dartsUsed).toBe(0); // dartsUsed omitted → 0 on a bust too
+    expect(state.players[0].totalDartsThrown).toBe(0);
     expect(state.active!.playerIndex).toBe(1);
   });
 
@@ -1069,7 +1069,7 @@ describe("undo — deep states", () => {
   it("allows a re-submit after undoing a bust", () => {
     let state = startPlaying();
     state = matchReducer(state, submitTurn({ score: 600 })); // bust
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(0); // dartsUsed omitted → 0
 
     state = matchReducer(state, undo());
     expect(state.players[0].totalDartsThrown).toBe(0);
@@ -1454,7 +1454,7 @@ describe("bookkeeping", () => {
   it("adds 3 darts for a mid-match bust on top of prior darts", () => {
     let state = startPlaying();
     state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p1
-    state = matchReducer(state, submitTurn({ score: 600 })); // p2 bust
+    state = matchReducer(state, submitTurn({ score: 600, dartsUsed: 3 })); // p2 bust
     expect(state.players[1].totalDartsThrown).toBe(3);
     state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p1
     state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 })); // p2
@@ -1481,8 +1481,8 @@ describe("bookkeeping", () => {
     // Leg 1: p1 checks out
     state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
     state = matchReducer(state, startNextLeg());
-    // Leg 2: p2 busts, then p1 checks out → 2-0
-    state = matchReducer(state, submitTurn({ score: 600 }));
+    // Leg 2: p2 busts (3 darts), then p1 checks out → 2-0
+    state = matchReducer(state, submitTurn({ score: 600, dartsUsed: 3 }));
     state = matchReducer(state, submitTurn({ score: 501, dartsUsed: 3 }));
 
     expect(state.status).toBe("match_finished");
@@ -2278,7 +2278,7 @@ describe("G6 — dartsUsed edges", () => {
     expect(state.active!.currentLeg.turns).toHaveLength(1); // turn recorded
   });
 
-  it("forces 3 darts on a bust even with dartsUsed 1 passed explicitly", () => {
+  it("counts the actual dartsUsed on an explicit bust (dartsUsed 1)", () => {
     const state = matchReducer(
       startPlaying(),
       submitTurn({ score: 60, isBust: true, dartsUsed: 1 })
@@ -2286,18 +2286,18 @@ describe("G6 — dartsUsed edges", () => {
     const turn = state.active!.currentLeg.turns[0];
 
     expect(turn.isBust).toBe(true);
-    expect(turn.dartsUsed).toBe(3); // bust always counts 3 darts
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(turn.dartsUsed).toBe(1); // actual darts thrown on the bust
+    expect(state.players[0].totalDartsThrown).toBe(1);
     expect(state.players[0].score).toBe(501); // unchanged
   });
 
-  it("forces 3 darts on a bust even with dartsUsed 4 (bust overrides unclamped values)", () => {
+  it("stores dartsUsed verbatim on a bust (no 3-dart forcing, no clamping)", () => {
     const state = matchReducer(startPlaying(), submitTurn({ score: 600, dartsUsed: 4 }));
     const turn = state.active!.currentLeg.turns[0];
 
     expect(turn.isBust).toBe(true);
-    expect(turn.dartsUsed).toBe(3);
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(turn.dartsUsed).toBe(4);
+    expect(state.players[0].totalDartsThrown).toBe(4);
   });
 
   it("accepts a negative dartsUsed without clamping (behavior snapshot)", () => {
@@ -2319,13 +2319,13 @@ describe("G6 — dartsUsed edges", () => {
     expect(state.players[0].totalDartsThrown).toBe(4);
   });
 
-  it("forces 3 darts on a bust with an explicit dartsUsed of 0", () => {
+  it("records an explicit dartsUsed of 0 on a bust", () => {
     const state = matchReducer(startPlaying(), submitTurn({ score: 600, dartsUsed: 0 }));
     const turn = state.active!.currentLeg.turns[0];
 
     expect(turn.isBust).toBe(true);
-    expect(turn.dartsUsed).toBe(3);
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(turn.dartsUsed).toBe(0);
+    expect(state.players[0].totalDartsThrown).toBe(0);
   });
 });
 
@@ -2370,7 +2370,7 @@ describe("G7 — value edges (301 start, explicit bust)", () => {
 
     expect(turn.isBust).toBe(true);
     expect(turn.points).toBe(0);
-    expect(turn.dartsUsed).toBe(3);
+    expect(turn.dartsUsed).toBe(0); // dartsUsed omitted → 0 on a bust too
     expect(turn.remainingScore).toBe(501); // stays current
     expect(state.players[0].score).toBe(501); // unchanged
     expect(state.status).toBe("playing");

@@ -140,7 +140,7 @@ const matchSlice = createSlice({
         playerId: activePlayer.id,
         points: isBust ? 0 : score,
         isBust: isBust,
-        dartsUsed: isBust ? 3 : dartsUsed, // шидсэн сумны тоо
+        dartsUsed: dartsUsed, // бодит шидсэн сумны тоо (bust дээр ч мөн адил)
         remainingScore: isBust ? activePlayer.score : remaining,
         timestamp: Date.now(),
       };
@@ -148,7 +148,7 @@ const matchSlice = createSlice({
       state.active.currentLeg.turns.push(turn);
 
       if (isBust) {
-        activePlayer.totalDartsThrown += 3;
+        activePlayer.totalDartsThrown += dartsUsed;
         state.active.playerIndex = nextPlayer(state);
         return;
       }

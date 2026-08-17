@@ -212,17 +212,17 @@ describe("Group A: bogie reachability table — checkFinishablePoint", () => {
 // --- Group B: Bust rules matrix (submitTurn) ----------------------------------
 
 describe("Group B: bust rules matrix — submitTurn", () => {
-  it("overshoot (remaining < 0) busts: score unchanged, +3 darts, 0 points, turn passes", () => {
+  it("overshoot (remaining < 0) busts: score unchanged, +dartsUsed darts, 0 points, turn passes", () => {
     let state = startPlaying();
     state = matchReducer(state, submitTurn({ score: 600, dartsUsed: 2 }));
 
     const turn = state.active!.currentLeg.turns[0];
     expect(turn.isBust).toBe(true);
     expect(turn.points).toBe(0);
-    expect(turn.dartsUsed).toBe(3); // forced to 3 on a bust
+    expect(turn.dartsUsed).toBe(2); // actual darts thrown on the bust
     expect(turn.remainingScore).toBe(501); // pre-throw score preserved
     expect(state.players[0].score).toBe(501); // unchanged
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(2);
     expect(state.players[0].totalPointsScored).toBe(0);
     expect(state.active!.playerIndex).toBe(1); // turn passes
     expect(state.status).toBe("playing");
@@ -278,7 +278,7 @@ describe("Group B: bust rules matrix — submitTurn", () => {
     expect(state.active!.playerIndex).toBe(1);
   });
 
-  it("bust turns are recorded with isBust:true, points:0, dartsUsed:3, remainingScore = pre-throw score", () => {
+  it("bust turns are recorded with isBust:true, points:0, dartsUsed: actual, remainingScore = pre-throw score", () => {
     let state = startPlaying();
     state = matchReducer(state, submitTurn({ score: 100, dartsUsed: 1, isBust: true }));
 
@@ -286,7 +286,7 @@ describe("Group B: bust rules matrix — submitTurn", () => {
       playerId: "p1",
       isBust: true,
       points: 0,
-      dartsUsed: 3,
+      dartsUsed: 1, // actual darts thrown on the bust
       remainingScore: 501, // pre-throw score, not 501 - 100
     });
   });
@@ -346,7 +346,7 @@ describe("Group C: checkout rules", () => {
     expect(state.active!.currentLeg.turns[2]).toMatchObject({
       isBust: true,
       points: 0,
-      dartsUsed: 3,
+      dartsUsed: 1, // actual darts thrown on the bust
       remainingScore: 2,
     });
     expect(state.players[0].score).toBe(2); // unchanged by the bust
@@ -493,11 +493,11 @@ describe("Group E: PPR/darts bookkeeping", () => {
     expect(state.players[0].totalPointsScored).toBe(100);
   });
 
-  it("bust turn: totalDartsThrown += 3 even when dartsUsed < 3; totalPointsScored += 0", () => {
+  it("bust turn: totalDartsThrown += actual dartsUsed; totalPointsScored += 0", () => {
     let state = startPlaying();
     state = matchReducer(state, submitTurn({ score: 600, dartsUsed: 1 }));
 
-    expect(state.players[0].totalDartsThrown).toBe(3);
+    expect(state.players[0].totalDartsThrown).toBe(1);
     expect(state.players[0].totalPointsScored).toBe(0);
     expect(state.players[0].score).toBe(501);
   });
@@ -535,7 +535,7 @@ describe("Group E: PPR/darts bookkeeping", () => {
     state = matchReducer(state, submitTurn({ score: 60, dartsUsed: 3 }));
     // Bob: no-score turn
     state = matchReducer(state, submitTurn({ score: 0, dartsUsed: 3 }));
-    // Alice: bust — 3 darts counted, 0 points (even though dartsUsed: 1 passed)
+    // Alice: bust — 1 dart counted (actual dartsUsed), 0 points
     state = matchReducer(state, submitTurn({ score: 600, dartsUsed: 1 }));
     // Bob: no-score turn
     state = matchReducer(state, submitTurn({ score: 0, dartsUsed: 3 }));
@@ -543,9 +543,9 @@ describe("Group E: PPR/darts bookkeeping", () => {
     state = matchReducer(state, submitTurn({ score: 100, dartsUsed: 2 }));
 
     const alice = state.players[0];
-    expect(alice.totalDartsThrown).toBe(8); // 3 + 3 (bust) + 2
+    expect(alice.totalDartsThrown).toBe(6); // 3 + 1 (bust) + 2
     expect(alice.totalPointsScored).toBe(160); // 60 + 0 + 100
     const ppr = alice.totalPointsScored / (alice.totalDartsThrown / 3);
-    expect(ppr).toBe(60);
+    expect(ppr).toBe(80);
   });
 });
