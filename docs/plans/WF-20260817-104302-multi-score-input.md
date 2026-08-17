@@ -469,6 +469,11 @@ export function useDartTurn({ currentScore, checkout, onSubmit }: UseDartTurnOpt
   const onSubmitRef = useRef(onSubmit);
   onSubmitRef.current = onSubmit;
 
+  // Ref mirror of darts so addDart computes OUTSIDE setState updaters.
+  // Side effects inside updaters double-fire under React StrictMode (dev).
+  const dartsRef = useRef<DartEntry[]>([]);
+  useEffect(() => { dartsRef.current = darts; }, [darts]);
+
   // New turn (currentScore changed — after a submit or an external undo): clear.
   const scoreRef = useRef(currentScore);
   useEffect(() => {
@@ -479,34 +484,35 @@ export function useDartTurn({ currentScore, checkout, onSubmit }: UseDartTurnOpt
     }
   }, [currentScore]);
 
-  const addDart = useCallback((segment: number, multiplier: Multiplier) => {
+  const addDart = useCallback((segment: number, multiplier: Multiplier): TurnOutcome => {
     const points = scoreDart(segment, multiplier);
-    setDarts((prev) => {
-      const next = [...prev, { segment, multiplier, points }];
-      const status = resolveTurnStatus(next, scoreRef.current, checkout);
+    const next = [...dartsRef.current, { segment, multiplier, points }];
+    const status = resolveTurnStatus(next, scoreRef.current, checkout);
 
-      if (status === 'bust') {
-        setLastOutcome('bust');
-        onSubmitRef.current(0, next.length, true);
-        return [];
-      }
-      if (status === 'finish') {
-        const total = next.reduce((sum, d) => sum + d.points, 0);
-        setLastOutcome('finish');
-        onSubmitRef.current(total, next.length, false);
-        return [];
-      }
-      if (next.length === 3) {
-        const total = next.reduce((sum, d) => sum + d.points, 0);
-        setLastOutcome('submitted');
-        onSubmitRef.current(total, 3, false);
-        return [];
-      }
-      setLastOutcome('added');
-      return next;
-    });
-    return lastOutcome;
-  }, [checkout, lastOutcome]);
+    if (status === 'bust') {
+      setDarts([]);
+      setLastOutcome('bust');
+      onSubmitRef.current(0, next.length, true);
+      return 'bust';
+    }
+    if (status === 'finish') {
+      const total = next.reduce((sum, d) => sum + d.points, 0);
+      setDarts([]);
+      setLastOutcome('finish');
+      onSubmitRef.current(total, next.length, false);
+      return 'finish';
+    }
+    if (next.length === 3) {
+      const total = next.reduce((sum, d) => sum + d.points, 0);
+      setDarts([]);
+      setLastOutcome('submitted');
+      onSubmitRef.current(total, 3, false);
+      return 'submitted';
+    }
+    setDarts(next);
+    setLastOutcome('added');
+    return 'added';
+  }, [checkout]);
 
   const undoDart = useCallback(() => {
     setDarts((prev) => (prev.length > 0 ? prev.slice(0, -1) : prev));
@@ -519,7 +525,7 @@ export function useDartTurn({ currentScore, checkout, onSubmit }: UseDartTurnOpt
 }
 ```
 
-> Note: the returned `lastOutcome` inside `addDart` is stale by design — component code reads `lastOutcome` from the render cycle after state settles. Keep the `return lastOutcome;` line or drop it; the hook's contract is `lastOutcome` in state.
+> Note: `addDart` computes the next dart list from `dartsRef` (mirrored by effect after each commit) and performs ALL side effects (setState + onSubmit) in the handler body — never inside a setState updater, which React StrictMode double-invokes in dev and would double-submit. `addDart` returns the outcome directly for UI feedback; `lastOutcome` state mirrors it for render.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
