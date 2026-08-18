@@ -4,6 +4,8 @@ import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { selectCanUndo, submitTurn, undo, abandonMatch } from '@/lib/redux/matchSlice';
 import { ScoreBoard } from '@/components/scoring/ScoreBoard';
 import ScoreInputPanel from '@/components/scoring/ScoreInputPanel';
+import ScoreInputModeMenu from '@/components/scoring/ScoreInputModeMenu';
+import { useScoreInputMode } from '@/hooks/useScoreInputMode';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LegTransition } from '@/components/scoring/LegTransition';
@@ -23,6 +25,7 @@ export default function MatchPage() {
 
     const currentPlayerIndex = match.active?.playerIndex ?? 0;
     const canUndo = useAppSelector(selectCanUndo);
+    const { mode, setMode, isLarge } = useScoreInputMode();
 
     const prevStatusRef = useRef(match.status);
 
@@ -56,6 +59,7 @@ export default function MatchPage() {
                 title={`${match.settings.startingScore} · ${match.settings.checkout === 'double' ? 'D/O' : 'S/O'}`}
                 onBack={() => setShowExitDialog(true)}
                 backButtonIcon={<IconX size={18} />}
+                actions={<ScoreInputModeMenu mode={mode} onSelect={setMode} isLarge={isLarge} />}
             />
 
             <div className="flex-1 flex flex-col justify-end pb-safe overflow-hidden">
@@ -66,6 +70,7 @@ export default function MatchPage() {
                 />
 
                 <ScoreInputPanel
+                    mode={mode}
                     onSubmit={(score, dartsUsed, isBust) =>
                         dispatch(submitTurn({ score, dartsUsed, isBust }))
                     }

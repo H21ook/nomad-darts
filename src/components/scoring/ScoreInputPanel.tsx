@@ -7,9 +7,7 @@ import { cn } from '@/lib/utils';
 export type ScoreInputMode = 'three' | 'single' | 'board';
 
 interface ScoreInputPanelProps {
-  // Optional until T4 wires the page; defaults to 'three' (NumberPad) so the
-  // unwired match page keeps rendering the pad. T4 passes mode explicitly.
-  mode?: ScoreInputMode; // NEW — controlled
+  mode: ScoreInputMode; // controlled — the match page passes it via useScoreInputMode
   onSubmit: (score: number, dartsUsed?: number, isBust?: boolean) => void;
   onUndo?: () => void;
   canUndo?: boolean;
@@ -18,7 +16,7 @@ interface ScoreInputPanelProps {
   className?: string;
 }
 
-export default function ScoreInputPanel({ mode = 'three', onSubmit, onUndo, canUndo, currentScore, checkout = 'double', className }: ScoreInputPanelProps) {
+export default function ScoreInputPanel({ mode, onSubmit, onUndo, canUndo, currentScore, checkout = 'double', className }: ScoreInputPanelProps) {
   const padProps = { onSubmit, currentScore, checkout };
 
   return (
