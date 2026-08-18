@@ -161,6 +161,7 @@ const { mode, setMode, isLarge } = useScoreInputMode();
 ```
 
 - Layout classes of the page and ScoreBoard stay untouched.
+- **Tighten `mode` to required (T2 review follow-up):** T2 made `mode?: ScoreInputMode` optional (default `'three'`) so tsc stays green before wiring. Now that `page.tsx` passes `mode` explicitly, change the prop back to `mode: ScoreInputMode` (required) in `ScoreInputPanel.tsx` and re-run tsc/lint/tests.
 - `matchFlow.test.tsx` must pass unchanged: NumberPad root `div.p-2.gap-2.bg-black`, submit `button.bg-cyan-500`, back `aria-label="Go back"` all preserved (they are — the panel no longer wraps with gap-2 but NumberPad itself keeps its classes).
 
 - [ ] **Step 1:** Wire the hook, AppBar actions, and panel `mode` prop in `src/app/match/page.tsx`.
