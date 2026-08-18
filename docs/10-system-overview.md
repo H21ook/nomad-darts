@@ -52,3 +52,4 @@ Darts Scoring PWA — X01 төрлийн (301/501 зэрэг) оноо оруу�
 
 - Implemented: `ScoreInputPanel` — 3 горим: **3 DARTS** (тоон pad, default), **1 DART** (сегмент сонгогч + Double/Triple), **BOARD** (touch dartboard, ≥768px дэлгэцэнд)
 - Сонгосон горим localStorage-д хадгалагдана; bust үед бодит шидсэн дартны тоог бүртгэнэ
+- Горим шилжүүлэгч AppBar-ын баруун талын Settings popover цэсээр хийгдэнэ (3 DARTS / 1 DART / BOARD)
