@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import SingleDartPad from '@/components/scoring/SingleDartPad';
@@ -24,8 +24,9 @@ function renderPad(overrides: { currentScore?: number; checkout?: 'double' | 'st
   return { onSubmit };
 }
 
-const slotsRow = () => document.querySelector<HTMLElement>('div.grid.grid-cols-3');
-const sumLine = () => document.querySelector<HTMLElement>('span.text-zinc-600');
+const row = () => document.querySelector('span.text-zinc-600')!.parentElement!;
+const slotDivs = () => [...row().children].slice(0, 3) as HTMLElement[];
+const sumLine = () => document.querySelector('span.text-zinc-600');
 
 describe('SingleDartPad', () => {
   it('records D20 = 40 after Double then 20, then resets to single', async () => {
@@ -33,12 +34,12 @@ describe('SingleDartPad', () => {
     const { onSubmit } = renderPad();
     await user.click(screen.getByRole('button', { name: /Double/ }));
     await user.click(screen.getByRole('button', { name: '20' }));
-    expect(within(slotsRow()!).getByText('40')).toBeInTheDocument(); // first slot
-    expect(sumLine()!.textContent).toBe('40');                       // dim sum
+    expect(slotDivs()[0]!.textContent).toBe('40');
+    expect(sumLine()!.textContent).toBe('40');
     await user.click(screen.getByRole('button', { name: '20' }));
-    expect(within(slotsRow()!).getByText('20')).toBeInTheDocument(); // second slot
-    expect(within(slotsRow()!).getByText('40')).toBeInTheDocument(); // first slot stays
-    expect(sumLine()!.textContent).toBe('60');                       // 40 + S20
+    expect(slotDivs()[0]!.textContent).toBe('40');
+    expect(slotDivs()[1]!.textContent).toBe('20');
+    expect(sumLine()!.textContent).toBe('60'); // 40 + S20
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -76,7 +77,7 @@ describe('SingleDartPad', () => {
     await user.click(screen.getByRole('button', { name: '20' }));
     await user.click(screen.getByRole('button', { name: '20' }));
     await user.click(screen.getByRole('button', { name: /Undo/ }));
-    expect(within(slotsRow()!).getByText('20')).toBeInTheDocument();
+    expect(slotDivs()[0]!.textContent).toBe('20');
     expect(sumLine()!.textContent).toBe('20');
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -97,7 +98,7 @@ describe('SingleDartPad', () => {
     const { onSubmit } = renderPad({ currentScore: 201 });
     await user.click(screen.getByRole('button', { name: /Double/ }));
     await user.click(screen.getByRole('button', { name: '25' }));
-    expect(within(slotsRow()!).getByText('50')).toBeInTheDocument();
+    expect(slotDivs()[0]!.textContent).toBe('50');
     expect(sumLine()!.textContent).toBe('50');
     await user.click(screen.getByRole('button', { name: /BULL/ }));
     await user.click(screen.getByRole('button', { name: '20' }));

@@ -12,7 +12,10 @@ afterEach(() => {
   cleanup();
 });
 
-const slotsRow = () => document.querySelector('div.grid.grid-cols-3');
+// The slots row container is the parent of the sum line; its first 3
+// children are the slot divs (then the sum span, then the undo button).
+const row = () => document.querySelector('span.text-zinc-600')!.parentElement!;
+const slotDivs = () => [...row().children].slice(0, 3) as HTMLElement[];
 const sumLine = () => document.querySelector('span.text-zinc-600');
 
 function renderDisplay(overrides: { darts?: DartEntry[]; total?: number; canUndo?: boolean; bustFlash?: boolean } = {}) {
@@ -32,8 +35,8 @@ function renderDisplay(overrides: { darts?: DartEntry[]; total?: number; canUndo
 describe('DartSlotsDisplay', () => {
   it('renders three empty slots and a dim sum of 0', () => {
     renderDisplay();
-    expect(slotsRow()!.querySelectorAll('div').length).toBe(3);
-    expect(slotsRow()!.querySelectorAll('span').length).toBe(0); // no numbers
+    expect(slotDivs().length).toBe(3);
+    expect(slotDivs().every((s) => !s.textContent)).toBe(true); // no numbers
     expect(sumLine()!.textContent).toBe('0');
   });
 
@@ -46,8 +49,9 @@ describe('DartSlotsDisplay', () => {
       total: 60,
       canUndo: true,
     });
-    const texts = [...slotsRow()!.querySelectorAll('span')].map((s) => s.textContent);
-    expect(texts).toEqual(['20', '40']);
+    expect(slotDivs()[0]!.textContent).toBe('20');
+    expect(slotDivs()[1]!.textContent).toBe('40');
+    expect(slotDivs()[2]!.textContent).toBe('');
     expect(sumLine()!.textContent).toBe('60');
   });
 
