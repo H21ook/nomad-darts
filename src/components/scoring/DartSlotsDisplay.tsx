@@ -5,7 +5,7 @@ import type { DartEntry } from '@/hooks/useDartTurn';
 
 interface DartSlotsDisplayProps {
   darts: DartEntry[]; // 0..3 entries — slot i shows darts[i], left to right
-  total: number; // running turn total — shown dim below the slots
+  total: number; // running turn total — shown dim after the slots
   onUndo: () => void;
   canUndo: boolean;
   bustFlash?: boolean;
@@ -13,7 +13,7 @@ interface DartSlotsDisplayProps {
 
 /**
  * Per-dart turn display for single dart mode: three slots that fill with each
- * dart's points, and the turn total shown small and dim underneath — so the
+ * dart's points, and the turn total shown small and dim after them — so the
  * running sum doesn't read as a score change.
  */
 export default function DartSlotsDisplay({ darts, total, onUndo, canUndo, bustFlash }: DartSlotsDisplayProps) {
