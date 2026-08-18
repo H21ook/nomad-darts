@@ -1,9 +1,9 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useDartTurn } from '@/hooks/useDartTurn';
 import { canApplyMultiplier, type Multiplier } from '@/lib/dartboard';
 import { cn } from '@/lib/utils';
-import TurnDisplay from './TurnDisplay';
+import DartSlotsDisplay from './DartSlotsDisplay';
 import MultiplierButtons from './MultiplierButtons';
 
 interface SingleDartPadProps {
@@ -34,11 +34,6 @@ export default function SingleDartPad({ onSubmit, currentScore, checkout = 'doub
     setLegOver(false);
   }
 
-  const breakdown = useMemo(
-    () => darts.map((d) => `${d.multiplier === 'S' ? 'S' : d.multiplier}${d.segment}`).join(' · '),
-    [darts]
-  );
-
   const handleSegment = (segment: number) => {
     if (!canApplyMultiplier(segment, multiplier)) return;
     const outcome = addDart(segment, multiplier);
@@ -48,10 +43,9 @@ export default function SingleDartPad({ onSubmit, currentScore, checkout = 'doub
 
   return (
     <div className="flex flex-col h-full w-full p-2 gap-2 bg-black select-none touch-none">
-      <TurnDisplay
+      <DartSlotsDisplay
+        darts={darts}
         total={total}
-        dartCount={darts.length}
-        breakdown={breakdown}
         onUndo={undoDart}
         canUndo={darts.length > 0}
         bustFlash={lastOutcome === 'bust'}
