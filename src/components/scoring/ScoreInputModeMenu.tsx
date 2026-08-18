@@ -42,7 +42,7 @@ export default function ScoreInputModeMenu({ mode, onSelect, isLarge }: ScoreInp
         aria-expanded={open}
         onPointerDown={(e) => {
           e.preventDefault();
-          navigator.vibrate(5);
+          if (navigator.vibrate) navigator.vibrate(5);
           setOpen((o) => !o);
         }}
         className="w-14 h-14 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors p-2"
